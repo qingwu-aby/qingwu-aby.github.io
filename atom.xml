@@ -1,26 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-    <id>https://yuan-far.github.io/</id>
+    <id>https://qingwu-aby.github.io/</id>
     <title>Abyss</title>
-    <updated>2020-05-14T10:43:05.309Z</updated>
+    <updated>2020-05-14T10:51:44.296Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
-    <link rel="alternate" href="https://yuan-far.github.io/"/>
-    <link rel="self" href="https://yuan-far.github.io//atom.xml"/>
+    <link rel="alternate" href="https://qingwu-aby.github.io/"/>
+    <link rel="self" href="https://qingwu-aby.github.io//atom.xml"/>
     <subtitle>温故而知新</subtitle>
-    <logo>https://yuan-far.github.io//images/avatar.png</logo>
-    <icon>https://yuan-far.github.io//favicon.ico</icon>
+    <logo>https://qingwu-aby.github.io//images/avatar.png</logo>
+    <icon>https://qingwu-aby.github.io//favicon.ico</icon>
     <rights>All rights reserved 2020, Abyss</rights>
     <entry>
         <title type="html"><![CDATA[npm-nest]]></title>
-        <id>https://yuan-far.github.io//post/npm-nest</id>
-        <link href="https://yuan-far.github.io//post/npm-nest">
+        <id>https://qingwu-aby.github.io//post/npm-nest</id>
+        <link href="https://qingwu-aby.github.io//post/npm-nest">
         </link>
         <updated>2020-05-14T10:19:22.000Z</updated>
     </entry>
     <entry>
         <title type="html"><![CDATA[曝光和点击]]></title>
-        <id>https://yuan-far.github.io//post/tracking</id>
-        <link href="https://yuan-far.github.io//post/tracking">
+        <id>https://qingwu-aby.github.io//post/tracking</id>
+        <link href="https://qingwu-aby.github.io//post/tracking">
         </link>
         <updated>2019-09-23T03:04:37.000Z</updated>
     </entry>
