@@ -4,10 +4,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>曝光和点击 | Abyss</title>
 <meta name="description" content="温故而知新" />
-<link rel="shortcut icon" href="https://abyss.github.io//favicon.ico?v=1589452742331">
+<link rel="shortcut icon" href="https://yuan-far.github.io//favicon.ico?v=1589452944650">
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
-<link rel="stylesheet" href="https://abyss.github.io//styles/main.css">
+<link rel="stylesheet" href="https://yuan-far.github.io//styles/main.css">
 
 <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
@@ -19,8 +19,8 @@
     <div class="main">
       <div class="main-content">
         <div class="site-header">
-  <a href="https://abyss.github.io/">
-  <img class="avatar" src="https://abyss.github.io//images/avatar.png?v=1589452742331" alt="">
+  <a href="https://yuan-far.github.io/">
+  <img class="avatar" src="https://yuan-far.github.io//images/avatar.png?v=1589452944650" alt="">
   </a>
   <h1 class="site-title">
     Abyss
@@ -113,7 +113,7 @@
 <blockquote>
 <ul>
 <li>对于页面中某个元素的曝光<br>
-1. 在这个场景中，我们可以对页面中的曝光逻辑进行拆分<img src="https://abyss.github.io//post-images/1569726066873.png" alt=""><br>
+1. 在这个场景中，我们可以对页面中的曝光逻辑进行拆分<img src="https://yuan-far.github.io//post-images/1569726066873.png" alt=""><br>
 如上图所示，在这个场景中需要曝光的元素在一个视口中能够全部展示出来，我们可以在一个组件中将这个元素的所有埋点全部曝光出来<br>
 <!-- 凑个字数 --></li>
 </ul>
@@ -157,7 +157,7 @@
 <pre><code>    这是一个最简单的场景应用，如果页面上有大量的元素存在，并且相当一部分不在当前的视口中的时候，这种做法会对曝光的数据带来不可控（你不知道元素是否已经被用户看到了）。
 2. 这个时候就可以引入新的方式`Intersection-observe`：
     因为可见性的本质是目标元素与当前视口出现的交叉区域。文档[IntersectionOberver](https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API)
-    ![](https://abyss.github.io//post-images/1569744502847.jpg)
+    ![](https://yuan-far.github.io//post-images/1569744502847.jpg)
     如图所示我们只需要上报已经出现在视口中的元素就可以了，下方不在当前视口中的元素将不会曝光，每个元素在都会被observe，在监听事件结束之后将会销毁确保曝光逻辑只会出现一次
 </code></pre>
 <pre><code class="language-javascript">class Impr extends React.Component {
@@ -259,7 +259,7 @@ class Page extends BaseComponent {
 
         <div class="site-footer">
   Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
-  <a class="rss" href="https://abyss.github.io//atom.xml" target="_blank">RSS</a>
+  <a class="rss" href="https://yuan-far.github.io//atom.xml" target="_blank">RSS</a>
 </div>
 
 <script>
