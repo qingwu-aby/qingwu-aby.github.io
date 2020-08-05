@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://qingwu-aby.github.io/</id>
     <title>Abyss</title>
-    <updated>2020-06-18T10:20:16.021Z</updated>
+    <updated>2020-08-05T07:44:14.921Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://qingwu-aby.github.io/"/>
     <link rel="self" href="https://qingwu-aby.github.io/atom.xml"/>
@@ -10,6 +10,13 @@
     <logo>https://qingwu-aby.github.io/images/avatar.png</logo>
     <icon>https://qingwu-aby.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, Abyss</rights>
+    <entry>
+        <title type="html"><![CDATA[回溯算法1--全排列]]></title>
+        <id>https://qingwu-aby.github.io/post/hui-su-suan-fa-1-quan-pai-lie/</id>
+        <link href="https://qingwu-aby.github.io/post/hui-su-suan-fa-1-quan-pai-lie/">
+        </link>
+        <updated>2020-06-18T10:41:07.000Z</updated>
+    </entry>
     <entry>
         <title type="html"><![CDATA[动态规划2---凑零钱]]></title>
         <id>https://qingwu-aby.github.io/post/dong-tai-gui-hua-2-cou-ling-qian/</id>
