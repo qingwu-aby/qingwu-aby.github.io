@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://qingwu-aby.github.io/</id>
     <title>Abyss</title>
-    <updated>2020-08-05T07:44:14.921Z</updated>
+    <updated>2020-08-14T02:10:35.881Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://qingwu-aby.github.io/"/>
     <link rel="self" href="https://qingwu-aby.github.io/atom.xml"/>
@@ -10,6 +10,13 @@
     <logo>https://qingwu-aby.github.io/images/avatar.png</logo>
     <icon>https://qingwu-aby.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, Abyss</rights>
+    <entry>
+        <title type="html"><![CDATA[推进节奏]]></title>
+        <id>https://qingwu-aby.github.io/post/tui-jin-jie-zou/</id>
+        <link href="https://qingwu-aby.github.io/post/tui-jin-jie-zou/">
+        </link>
+        <updated>2020-08-09T06:44:25.000Z</updated>
+    </entry>
     <entry>
         <title type="html"><![CDATA[回溯算法1--全排列]]></title>
         <id>https://qingwu-aby.github.io/post/hui-su-suan-fa-1-quan-pai-lie/</id>
