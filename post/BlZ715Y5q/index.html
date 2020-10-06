@@ -1,94 +1,93 @@
-<!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8" >
-
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>React源码系列2----React Fiber | Abyss</title>
-<meta name="description" content="温故而知新">
-
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<link rel="shortcut icon" href="https://qingwu-aby.github.io//favicon.ico?v=1601982052747">
-
+<meta name="description" content="温故而知新" />
+<link rel="shortcut icon" href="https://qingwu-aby.github.io//favicon.ico?v=1601982110706">
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-<link rel="stylesheet" href="https://unpkg.com/papercss@1.6.1/dist/paper.min.css" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://qingwu-aby.github.io//styles/main.css">
 
-
 <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
 
-
-<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
 
 
   </head>
   <body>
-  
-    <nav class="navbar border fixed split-nav">
-  <div class="nav-brand">
-    <h3><a href="https://qingwu-aby.github.io/">Abyss</a></h3>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://qingwu-aby.github.io/">
+  <img class="avatar" src="https://qingwu-aby.github.io//images/avatar.png?v=1601982110706" alt="">
+  </a>
+  <h1 class="site-title">
+    Abyss
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
   </div>
-  <div class="collapsible">
-    <input id="collapsible1" type="checkbox" name="collapsible1">
-    <button>
-      <label for="collapsible1">
-        <div class="bar1"></div>
-        <div class="bar2"></div>
-        <div class="bar3"></div>
-      </label>
-    </button>
-    <div class="collapsible-body">
-      <ul class="inline">
-        
-          <li>
-            
-              <a href="/" class="menu">
-                首页
-              </a>
-            
-          </li>
-        
-          <li>
-            
-              <a href="/archives" class="menu">
-                归档
-              </a>
-            
-          </li>
-        
-          <li>
-            
-              <a href="/tags" class="menu">
-                标签
-              </a>
-            
-          </li>
-        
-          <li>
-            
-              <a href="/post/about" class="menu">
-                关于
-              </a>
-            
-          </li>
-        
-      </ul>
-    </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
   </div>
-</nav>
+</div>
 
-    <div id="top" class="row site">
-      <div class="sm-12 md-8 col">
-        <div class="paper">
-          <article class="article">
-            <h1>React源码系列2----React Fiber</h1>
-            <p class="article-meta">
-              2020-10-02
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              React源码系列2----React Fiber
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-10-02
+              </span>
+              <span>
+                8 min read
+              </span>
               
-            </p>
+            </div>
             
-            <div class="post-content">
-              <!-- React -->
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <!-- React -->
 <h1 id="fiber-架构">Fiber 架构</h1>
 <h2 id="代数效应">代数效应</h2>
 <blockquote>
@@ -352,162 +351,105 @@ ReactDOM.render(&lt;App /&gt;, document.getElementById('root'))
 <li>在组件<code>update</code>的时候，<code>Reconciler</code>将<code>JSX</code>与<code>Fiber节点</code>保存的数据进行对比，生成组件对应的<code>Fiber节点</code>，并根据对应的结果给<code>Fiber节点</code>打上标记</li>
 </ul>
 
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#fiber-%E6%9E%B6%E6%9E%84">Fiber 架构</a>
+<ul>
+<li><a href="#%E4%BB%A3%E6%95%B0%E6%95%88%E5%BA%94">代数效应</a>
+<ul>
+<li><a href="#%E4%BB%A3%E6%95%B0%E6%95%88%E5%BA%94%E5%9C%A8react%E4%B8%AD%E7%9A%84%E5%BA%94%E7%94%A8">代数效应在React中的应用</a></li>
+<li><a href="#%E4%BB%A3%E6%95%B0%E6%95%88%E5%BA%94%E4%B8%8Egenerator">代数效应与Generator</a></li>
+<li><a href="#%E4%BB%A3%E6%95%B0%E6%95%88%E5%BA%94%E4%B8%8Efiber">代数效应与Fiber</a></li>
+</ul>
+</li>
+<li><a href="#fiber%E7%9A%84%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86">Fiber的实现原理</a>
+<ul>
+<li><a href="#what-is-fiber">What is Fiber</a></li>
+<li><a href="#fiber%E7%9A%84%E7%BB%93%E6%9E%84">Fiber的结构</a></li>
+<li><a href="#fiber%E4%BD%9C%E4%B8%BA%E6%9E%B6%E6%9E%84">Fiber作为架构</a></li>
+<li><a href="#%E4%BD%9C%E4%B8%BA%E9%9D%99%E6%80%81%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84">作为静态的数据结构</a></li>
+<li><a href="#%E4%BD%9C%E4%B8%BA%E5%8A%A8%E6%80%81%E7%9A%84%E5%B7%A5%E4%BD%9C%E5%8D%95%E5%85%83">作为动态的工作单元</a></li>
+</ul>
+</li>
+<li><a href="#fiber%E7%9A%84%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86">Fiber的工作原理</a>
+<ul>
+<li><a href="#%E5%8F%8C%E7%BC%93%E5%AD%98fiber%E6%A0%91">双缓存Fiber树</a></li>
+<li><a href="#mount">mount</a></li>
+<li><a href="#update">update</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#react%E7%9A%84scheduler-reconciler-renderer%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB">React的Scheduler-Reconciler-Renderer架构体系</a></li>
+<li><a href="#jsx%E4%B8%8Efiber%E8%8A%82%E7%82%B9">JSX与Fiber节点</a></li>
+</ul>
+
+              </div>
             </div>
           </article>
         </div>
-        <div class="paper" data-aos="fade-in">
-          
-            <div class="next-post">
-              <div class="next">
-                下一篇
-              </div>
-              <a href="https://qingwu-aby.github.io/post/E0UjUKnBP/">
-                <h3 class="post-title">
-                  React源码系列1---React15和16的差别
-                </h3>
-              </a>
-            </div>
-          
-        </div>
-        
-      </div>
 
-      <div class="sm-12 md-4 col sidebar">
-  <div class="paper info-container">
-    <img src="https://qingwu-aby.github.io//images/avatar.png?v=1601982052747" class="no-responsive avatar">
-    <div class="text-muted">温故而知新</div>
-    <div class="social-container">
-      
         
-      
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://qingwu-aby.github.io/post/E0UjUKnBP/">
+              <h3 class="post-title">
+                React源码系列1---React15和16的差别
+              </h3>
+            </a>
+          </div>
         
-      
+
         
-      
-        
-      
-        
-      
-    </div>
-  </div>
-  <div class="paper">
-    <div class="sidebar-title">
-      最新文章
-    </div>
-    <div class="row">
-      <ul>
-        
-          
-            <li>
-              <a href="https://qingwu-aby.github.io/post/85DIMWyxi/">React源码系列3---Render阶段</a>
-            </li>
-          
-        
-          
-            <li>
-              <a href="https://qingwu-aby.github.io/post/BlZ715Y5q/">React源码系列2----React Fiber</a>
-            </li>
-          
-        
-          
-            <li>
-              <a href="https://qingwu-aby.github.io/post/E0UjUKnBP/">React源码系列1---React15和16的差别</a>
-            </li>
-          
-        
-          
-            <li>
-              <a href="https://qingwu-aby.github.io/post/tui-jin-jie-zou/">学习方案</a>
-            </li>
-          
-        
-          
-            <li>
-              <a href="https://qingwu-aby.github.io/post/hui-su-suan-fa-1-quan-pai-lie/">回溯算法1--全排列</a>
-            </li>
-          
-        
-          
-            <li>
-              <a href="https://qingwu-aby.github.io/post/dong-tai-gui-hua-2-cou-ling-qian/">动态规划2---凑零钱</a>
-            </li>
-          
-        
-          
-            <li>
-              <a href="https://qingwu-aby.github.io/post/dong-tai-gui-hua-1fei-bo-na-qi-shu-lie-shuo-qi/">动态规划---1（斐波那契数列说起）·</a>
-            </li>
-          
-        
-          
-            <li>
-              <a href="https://qingwu-aby.github.io/post/yi-xie-wen-ti/">一些问题</a>
-            </li>
-          
-        
-          
-            <li>
-              <a href="https://qingwu-aby.github.io/post/npm-nest/">npm-nest</a>
-            </li>
-          
-        
-          
-            <li>
-              <a href="https://qingwu-aby.github.io/post/tracking/">曝光和点击</a>
-            </li>
-          
-        
-      </ul>
-    </div>
-  </div>
-  <div class="paper">
-    <div class="sidebar-title">
-      标签列表
-    </div>
-    <div class="row">
-      
-        <a href="https://qingwu-aby.github.io/tag/WHkzkmUVJ/" class="badge secondary">
-          JS基础
-        </a>
-      
-        <a href="https://qingwu-aby.github.io/tag/HDG5upSe4/" class="badge secondary">
-          算法和数据结构
-        </a>
-      
-        <a href="https://qingwu-aby.github.io/tag/o-FN4Uam8n/" class="badge success">
-          todo
-        </a>
-      
-        <a href="https://qingwu-aby.github.io/tag/H8FJNbNzO/" class="badge ">
-          一些问题
-        </a>
-      
-        <a href="https://qingwu-aby.github.io/tag/iheqDLI6k/" class="badge success">
-          埋点
-        </a>
-      
-    </div>
-  </div>
-  <div class="paper">
-     | <a class="rss" href="https://qingwu-aby.github.io//atom.xml" target="_blank">RSS</a>
-  </div>
+
+        <div class="site-footer">
+   | 
+  <a class="rss" href="https://qingwu-aby.github.io//atom.xml" target="_blank">RSS</a>
 </div>
 
+<script>
+  hljs.initHighlightingOnLoad()
 
-    </div>
+  let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
 
-    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+  // This should probably be throttled.
+  // Especially because it triggers during smooth scrolling.
+  // https://lodash.com/docs/4.17.10#throttle
+  // You could do like...
+  // window.addEventListener("scroll", () => {
+  //    _.throttle(doThatStuff, 100);
+  // });
+  // Only not doing it here to keep this Pen dependency-free.
 
-<script type="application/javascript">
+  window.addEventListener("scroll", event => {
+    let fromTop = window.scrollY;
 
-AOS.init();
-
-hljs.initHighlightingOnLoad()
+    mainNavLinks.forEach((link, index) => {
+      let section = document.getElementById(decodeURI(link.hash).substring(1));
+      let nextSection = null
+      if (mainNavLinks[index + 1]) {
+        nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+      }
+      if (section.offsetTop <= fromTop) {
+        if (nextSection) {
+          if (nextSection.offsetTop > fromTop) {
+            link.classList.add("current");
+          } else {
+            link.classList.remove("current");    
+          }
+        } else {
+          link.classList.add("current");
+        }
+      } else {
+        link.classList.remove("current");
+      }
+    });
+  });
 
 </script>
 
-
-
-
+      </div>
+    </div>
   </body>
 </html>
