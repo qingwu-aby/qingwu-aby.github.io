@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://qingwu-aby.github.io/</id>
     <title>Abyss</title>
-    <updated>2020-10-06T11:03:25.571Z</updated>
+    <updated>2020-10-06T11:03:50.053Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://qingwu-aby.github.io/"/>
     <link rel="self" href="https://qingwu-aby.github.io/atom.xml"/>
@@ -23,8 +23,7 @@
         <link href="https://qingwu-aby.github.io/post/BlZ715Y5q/">
         </link>
         <updated>2020-10-02T10:15:29.000Z</updated>
-        <summary type="html"><![CDATA[<!-- React -->
-<p><strong>Scheduler-Reconciler-Renderer</strong></p>
+        <summary type="html"><![CDATA[<p><strong>Scheduler-Reconciler-Renderer</strong></p>
 <h1 id="fiber-架构">Fiber 架构</h1>
 <h2 id="代数效应">代数效应</h2>
 <blockquote>
@@ -118,8 +117,7 @@
     //指向该fiber在另一次更新时候对应的fiber，双缓存的时候链接current Fiber和workInProgress Fiber
     this.alternate = null;</code></pre>
 ]]></summary>
-        <content type="html"><![CDATA[<!-- React -->
-<p><strong>Scheduler-Reconciler-Renderer</strong></p>
+        <content type="html"><![CDATA[<p><strong>Scheduler-Reconciler-Renderer</strong></p>
 <h1 id="fiber-架构">Fiber 架构</h1>
 <h2 id="代数效应">代数效应</h2>
 <blockquote>
