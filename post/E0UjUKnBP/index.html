@@ -1,0 +1,263 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>React源码系列1---React15和16的差别 | Abyss</title>
+<meta name="description" content="温故而知新" />
+<link rel="shortcut icon" href="https://qingwu-aby.github.io//favicon.ico?v=1601981556301">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://qingwu-aby.github.io//styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://qingwu-aby.github.io/">
+  <img class="avatar" src="https://qingwu-aby.github.io//images/avatar.png?v=1601981556301" alt="">
+  </a>
+  <h1 class="site-title">
+    Abyss
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              React源码系列1---React15和16的差别
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-09-23
+              </span>
+              <span>
+                4 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <!-- toc 源码 -->
+<p><strong>React的理念</strong></p>
+<blockquote>
+<p>速度快，响应自然</p>
+</blockquote>
+<h1 id="react的架构">React的架构</h1>
+<h2 id="react15">React15</h2>
+<ul>
+<li>Reconciler——找出发生变化的组件</li>
+<li>Renderer——渲染发生变化的组件</li>
+</ul>
+<h3 id="reconciler">Reconciler</h3>
+<blockquote>
+<p><code>React</code>中会通过<code>this.setState</code>,<code>this.forceUpdate</code>,<code>ReactDom.render</code>等方法更新组件</p>
+<ul>
+<li>调用函数组件、class组件的<code>render</code>方法，将返回的JSX转换为虚拟DOM</li>
+<li>将虚拟DOM与上次的进行比较</li>
+<li>找出本次发生更新的虚拟DOM</li>
+<li>通知<strong>Renderer</strong>将变化的虚拟DOM渲染到页面上</li>
+</ul>
+</blockquote>
+<h3 id="renderer">Renderer</h3>
+<blockquote>
+<p>每次更新发生的时候，<strong>Renderer</strong>接收到<strong>Reconciler</strong>的通知，将变化的组件渲染到当前的宿主环境</p>
+</blockquote>
+<h3 id="react15的缺陷">React15的缺陷</h3>
+<p><strong>无法支持同步更新</strong><br>
+<strong>递归的去更新会导致某写情况下页面的渲染结果不一致</strong></p>
+<blockquote>
+<p>在<code>Reconciler</code>中，<code>update</code>的组件会调用<code>updateComponent</code>,<code>mount</code>的组件会调用<code>mountComponent</code>，这两个方法都是递归执行的</p>
+<p>JS是一门单线程的语言，他的<code>GUI渲染线程</code>和<code>JS主线程</code>是互斥的，也就是说在页面执行我们的js代码的时候是不能够去渲染和绘制页面的，在我们渲染每一帧页面的时候：</p>
+</blockquote>
+<pre><code>JS代码执行-------样式布局-------样式绘制
+</code></pre>
+<blockquote>
+<ul>
+<li>当JS代码执行的时间超过每一帧的时长的时候，页面上就无法反映出本次渲染的结果</li>
+<li>同时，对于<code>React</code>来说，因为递归执行的原因，所以会导致页面一旦开始更新就无法终止；如果我们页面的层级变得很深，就会导致递归更新的时间过长，页面无法渲染</li>
+<li><strong>Scheduler</strong>和<strong>Reconciler</strong>是交替渲染的</li>
+</ul>
+</blockquote>
+<h2 id="react16">React16</h2>
+<blockquote>
+<p><code>React16</code>的架构有三层：</p>
+<ul>
+<li>Schduler（调度器）——调度人物的优先级，高优先级任务优先进入<strong>Reconciler</strong></li>
+<li>Reconciler（协调器）——找出变化的组件（<code>Fiber</code>架构？）</li>
+<li>Renderer（渲染器）——将变化的组件渲染到页面上</li>
+</ul>
+<blockquote>
+<p>其中<strong>Scheduler</strong>和<strong>Reconciler</strong>是平台无关的</p>
+</blockquote>
+</blockquote>
+<h3 id="scheduler调度器">Scheduler（调度器）</h3>
+<blockquote>
+<p>我们以浏览器每一帧是否有剩余时间作为任务中断的标准，需要有一种机制通知我们浏览器什么时候有剩余时间----<code>requestIdleCallback</code><br>
+<code>React</code>实现了<code>requestIdleCallback</code>的polyfill---<strong>Scheduler</strong>；除了在浏览器空闲时间触发回调，还提供了多种调度优先级</p>
+</blockquote>
+<h3 id="reconciler协调器">Reconciler（协调器）</h3>
+<blockquote>
+<p>在<code>React15</code>中，<strong>Reconciler</strong>是递归处理虚拟DOM的<br>
+<code>React16</code>中更新的过程从递归变成了可以终中断的循环过程，每一次循环都回去调用<code>shouleYield</code>判断当前是否有剩余时间</p>
+</blockquote>
+<pre><code class="language-javascript">function workLoopConcurrent() {
+    while(workInProgress !== null &amp;&amp; !shouldYield()) {
+        workInProgress = performUnitOfWork(workInProgress)
+    }
+}
+</code></pre>
+<blockquote>
+<p>关于<code>React15</code>中的因为一些特殊原因导致中断更新的时候DOM渲染不完全的问题</p>
+<p>在<code>React16</code>中，<strong>Reconciler</strong>和<strong>Renderer</strong>不是交替工作的。当<strong>Scheduler</strong>将任务交给<strong>Reconciler</strong>的时候，<strong>Reconciler</strong>会为变化的虚拟DOM搭上增/删/更新的标记</p>
+<blockquote>
+<p>其他的<a href="https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactSideEffectTags.js">标记</a><br>
+因为整个<strong>Scheduler</strong>和<strong>Reconciler</strong>的过程都是在内存中进行的。只有当组件都完成在<strong>Reconciler</strong>的工作，才会统一交给<strong>Renderer</strong></p>
+</blockquote>
+</blockquote>
+<h3 id="renderer渲染器">Renderer（渲染器）</h3>
+<blockquote>
+<p><strong>Renderer</strong>根据<strong>Reconciler</strong>为虚拟DOM的打上的标记，同步执行对应的DOM操作。<br>
+<strong>Scheduler</strong>和<strong>Reconciler</strong>中的步骤随时会因为，有更高优先级的任务进来，或者当前帧没有剩余时间而中断。因为 <strong>Scheduler</strong>和<strong>Reconciler</strong>中的工作都是在内存中进行的，并不会更新页面，所以即使这个里面出现反复中断，也不会影响用户的体验（看见部分DOM更新不完全）</p>
+</blockquote>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#react%E7%9A%84%E6%9E%B6%E6%9E%84">React的架构</a>
+<ul>
+<li><a href="#react15">React15</a>
+<ul>
+<li><a href="#reconciler">Reconciler</a></li>
+<li><a href="#renderer">Renderer</a></li>
+<li><a href="#react15%E7%9A%84%E7%BC%BA%E9%99%B7">React15的缺陷</a></li>
+</ul>
+</li>
+<li><a href="#react16">React16</a>
+<ul>
+<li><a href="#scheduler%E8%B0%83%E5%BA%A6%E5%99%A8">Scheduler（调度器）</a></li>
+<li><a href="#reconciler%E5%8D%8F%E8%B0%83%E5%99%A8">Reconciler（协调器）</a></li>
+<li><a href="#renderer%E6%B8%B2%E6%9F%93%E5%99%A8">Renderer（渲染器）</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://qingwu-aby.github.io/post/tui-jin-jie-zou/">
+              <h3 class="post-title">
+                推进节奏
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://qingwu-aby.github.io//atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+
+  let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+  // This should probably be throttled.
+  // Especially because it triggers during smooth scrolling.
+  // https://lodash.com/docs/4.17.10#throttle
+  // You could do like...
+  // window.addEventListener("scroll", () => {
+  //    _.throttle(doThatStuff, 100);
+  // });
+  // Only not doing it here to keep this Pen dependency-free.
+
+  window.addEventListener("scroll", event => {
+    let fromTop = window.scrollY;
+
+    mainNavLinks.forEach((link, index) => {
+      let section = document.getElementById(decodeURI(link.hash).substring(1));
+      let nextSection = null
+      if (mainNavLinks[index + 1]) {
+        nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+      }
+      if (section.offsetTop <= fromTop) {
+        if (nextSection) {
+          if (nextSection.offsetTop > fromTop) {
+            link.classList.add("current");
+          } else {
+            link.classList.remove("current");    
+          }
+        } else {
+          link.classList.add("current");
+        }
+      } else {
+        link.classList.remove("current");
+      }
+    });
+  });
+
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>

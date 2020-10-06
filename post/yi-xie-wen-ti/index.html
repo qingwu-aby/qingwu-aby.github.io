@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>一些问题 | Abyss</title>
 <meta name="description" content="温故而知新" />
-<link rel="shortcut icon" href="https://qingwu-aby.github.io//favicon.ico?v=1597372202670">
+<link rel="shortcut icon" href="https://qingwu-aby.github.io//favicon.ico?v=1601981556301">
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://qingwu-aby.github.io//styles/main.css">
@@ -20,7 +20,7 @@
       <div class="main-content">
         <div class="site-header">
   <a href="https://qingwu-aby.github.io/">
-  <img class="avatar" src="https://qingwu-aby.github.io//images/avatar.png?v=1597372202670" alt="">
+  <img class="avatar" src="https://qingwu-aby.github.io//images/avatar.png?v=1601981556301" alt="">
   </a>
   <h1 class="site-title">
     Abyss
@@ -266,6 +266,20 @@ CSS height 属性值 + 上下 padding + 上下 border + 水平滚动条高度 = 
 若元素内部包含未清除浮动的子元素，那么将不包含这些浮动元素的宽高。</li>
 </ul>
 </blockquote>
+<h1 id="react区分组件类型">React区分组件类型</h1>
+<blockquote>
+<p>React的组件可以分为<code>ClassComponent</code>、<code>FunctionComponent</code><br>
+<code>ClassComponent</code>对应的<code>Element type</code>是<code>当前Class</code>自身，<code>FunctionComponent</code>对应的<code>Element type</code>是函数组件自身</p>
+</blockquote>
+<pre><code class="language-javascript">AppClass instanceof Function === true
+AppFunc instanceOf === true
+</code></pre>
+<blockquote>
+<p>通过引用类型是无法区分当前组件的<code>type</code>的<br>
+可以通过调用<code>ClassComponent</code>原型链的<code>isReactComponent</code>属性判断是否是<code>classComponent</code></p>
+</blockquote>
+<pre><code class="language-javascript">ClassComponent.prototype.isReactComponent = {}
+</code></pre>
 
               </div>
               <div class="toc-container">
@@ -292,6 +306,7 @@ CSS height 属性值 + 上下 padding + 上下 border + 水平滚动条高度 = 
 </li>
 </ul>
 </li>
+<li><a href="#react%E5%8C%BA%E5%88%86%E7%BB%84%E4%BB%B6%E7%B1%BB%E5%9E%8B">React区分组件类型</a></li>
 </ul>
 
               </div>

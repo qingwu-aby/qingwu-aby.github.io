@@ -1,0 +1,454 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>React源码系列2----React Fiber | Abyss</title>
+<meta name="description" content="温故而知新" />
+<link rel="shortcut icon" href="https://qingwu-aby.github.io//favicon.ico?v=1601981556301">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://qingwu-aby.github.io//styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://qingwu-aby.github.io/">
+  <img class="avatar" src="https://qingwu-aby.github.io//images/avatar.png?v=1601981556301" alt="">
+  </a>
+  <h1 class="site-title">
+    Abyss
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              React源码系列2----React Fiber
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-10-02
+              </span>
+              <span>
+                8 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h1 id="fiber-架构">Fiber 架构</h1>
+<h2 id="代数效应">代数效应</h2>
+<blockquote>
+<p><code>代数效应</code>用于将<code>副作用</code>从<code>函数</code>中分离，保持函数的纯粹性</p>
+</blockquote>
+<h3 id="代数效应在react中的应用">代数效应在React中的应用</h3>
+<blockquote>
+<p><code>For example</code>---&gt;<code>Hooks</code>;对于<code>useState</code>,<code>useReducer</code>,<code>useRef</code>，我们不需要关注<code>FunctionComponent</code>的<code>state</code>在<code>Hook</code>中如何保存</p>
+</blockquote>
+<pre><code class="language-javascript">function App() {
+    const [count, setCount] = useState(0)
+    const handleClick = () =&gt; {
+        setCount(count =&gt; count + 1)
+    }
+    return (
+        &lt;button onClick={handleClick}&gt;{count}&lt;/button&gt;
+    )
+}
+</code></pre>
+<h3 id="代数效应与generator">代数效应与Generator</h3>
+<blockquote>
+<p>从<code>React15</code>到<code>React16</code><strong>Reconciler</strong>的架构从<code>同步更新</code>变更到了<code>可中断的异步更新</code><br>
+<code>异步可中断更新</code>：更新的执行过程中随时可能会被中断（浏览器时间分片用尽或者更高优先级的任务插队），当可以继续执行的时候恢复之前执行的中间状态<br>
+<code>Generator</code>实现异步可中断更新</p>
+</blockquote>
+<h3 id="代数效应与fiber">代数效应与Fiber</h3>
+<blockquote>
+<p><code>React Fiber</code>: 类似于<code>协程</code></p>
+<ul>
+<li><code>React</code>内部的一套状态更新机制。支持不同的<code>优先级</code>，可以更新和恢复，并且在恢复之后可以服用之前的<code>中间状态</code></li>
+<li>其中每个任务更新单元为<code>React Element</code>对应的<code>Fiber</code>节点---<strong>虚拟DOM</strong></li>
+</ul>
+</blockquote>
+<h2 id="fiber的实现原理">Fiber的实现原理</h2>
+<blockquote>
+<p><code>Fiber</code>之前的架构导致的问题： <code>Reconciler</code>采用递归的方式去更新虚拟DOM，递归过程是不能中断的。如果组件树的层级很深，递归就会占用线程大量的时间和资源，造成页面卡顿<br>
+<code>React16</code>将<code>递归的无法中断的更新</code>重构为<code>异步的可中断更新</code>，由此产生了新的<code>Fiber</code>架构</p>
+</blockquote>
+<h3 id="what-is-fiber">What is Fiber</h3>
+<blockquote>
+<ul>
+<li>作为架构来说，<code>React15</code>的<code>Reconciler</code>采用递归的方式去执行，数据保存在<strong>递归调用栈</strong>中---<code>Stack Reconciler</code>。<code>React16</code>的<code>Reconciler</code>基于<code>Fiber节点</code>----<code>Fiber Reconciler</code></li>
+<li>作为静态数据结构来说，每一个<code>Fiber节点</code>对应一个<code>React Element</code>，保存了该组件的类型（class\FunctionComponent\HostComponent）、对应的DOM节点信息</li>
+<li>作为动态的工作单元来说，每一个<code>Fiber节点</code>保存了本次更新中该组件改变的状态、要执行的工作等（增加\删除\更新...）</li>
+</ul>
+</blockquote>
+<h3 id="fiber的结构">Fiber的结构</h3>
+<blockquote>
+<p><a href="Fiber%E8%8A%82%E7%82%B9%E5%AE%9A%E4%B9%89">https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiber.new.js#L117</a></p>
+</blockquote>
+<pre><code class="language-javascript">function FiberNode (
+    tag: WorkTag,
+    pendingProps: mixed,
+    key: null | string,
+    mode: TypeOfMode
+) {
+    // 作为静态数据结构的属性
+    this.tag = tag;
+    this.key = key;
+    this.elementType = null;
+    this.type = null;
+    this.statNode = null;
+
+    // 用于链接其他Fiber节点形成Fiber树
+    this.return = null;
+    this.child = null;
+    this.sibling = null;
+    this.index = 0;
+
+    this.ref = null;
+
+    // 作为动态的动作单元的属性
+    this.penfingProps = pendingProps;
+    this.memoizedProps = null;
+    this.updateQuene = null;
+    this.memoizedState = null;
+    this.dependencies = null;
+
+    this.mode = mode;
+
+    this.effectTag = NoEffect;
+    this.nextEffect = null;
+
+    this.firstEffect = null;
+    this.lastEffect = null;
+
+    //调度优先级
+    this.lanes = NoLanes;
+    this.childLanes = NoLanes;
+
+    //指向该fiber在另一次更新时候对应的fiber，双缓存的时候链接current Fiber和workInProgress Fiber
+    this.alternate = null;
+&lt;!-- more --&gt;
+
+&lt;!-- more --&gt;
+
+}
+</code></pre>
+<h3 id="fiber作为架构">Fiber作为架构</h3>
+<blockquote>
+<p>每一个Fiber节点都有对应的<code>React Element</code>,多个<code>Fiber节点</code>应该如何链接成树？</p>
+</blockquote>
+<pre><code class="language-javascript">// 指向父级Fiber节点； 指节点执行完completeWork之后会返回的下一个节点
+this.return = null;
+// 指向子Fiber节点
+this.child = null;
+// 指向右边第一个兄弟节点
+this.sibling = null;
+</code></pre>
+<p>如下示例：</p>
+<pre><code class="language-javascript">function App() {
+    return (
+        &lt;div&gt;
+            hello
+            &lt;span&gt;React&lt;/span&gt;
+        &lt;/div&gt;
+    )
+}
+</code></pre>
+<p>对应的<code>Fiber树</code>结构：<br>
+<img src="https://qingwu-aby.github.io//post-images/1601717220480.png" alt="" loading="lazy"></p>
+<blockquote>
+<blockquote>
+<p><code>return</code>指节点执行完<code>completeWork</code>之后会返回的下一个节点，子节点及其兄弟节点在完成工作之后会返回其父级节点</p>
+</blockquote>
+</blockquote>
+<h3 id="作为静态的数据结构">作为静态的数据结构</h3>
+<p><code>Fiber</code>作为静态的数据结构，保存了组件的相关信息：</p>
+<pre><code class="language-javascript">// Fiber对应的组件类型，FunctionComponent/Class/HostComponent...
+this.tag = tag;
+// key属性
+this.key = key;
+// 当FunctionComponent使用React.memo包裹的时候type不一样
+this.elemenType = null;
+// 对于FunctionComponent,指函数本身
+// 对于ClassComponent，指class,
+// 对于HostComponent，指DOM节点tagName
+this.type = null;
+// Fiber反应的真实DOM节点
+this.stateNode = null; 
+</code></pre>
+<h3 id="作为动态的工作单元">作为动态的工作单元</h3>
+<p>作为动态的工作单元，<code>Fiber</code>保存了本次更新相关的信息</p>
+<pre><code class="language-javascript">// 保存本次更新造成的状态改变相关信息
+this.pendingProps = pendingProps;
+this.memoizedProps = null;
+this.updateQueue = null;
+this.memoizedState = null;
+this.dependencies = null;
+
+this.mode = mode;
+
+// 保存本次更新会造成的DOM操作
+this.effectTag = NoEffect;
+this.nextEffect = null;
+
+this.firstEffect = null;
+this.lastEffect = null;
+</code></pre>
+<h2 id="fiber的工作原理">Fiber的工作原理</h2>
+<ul>
+<li><code>Fiber节点</code>构成<code>Fiber树</code>，<code>Fiber树</code>对应<code>DOM树</code></li>
+<li>直接在内存中构建并直接替换的技术---&gt;双缓存</li>
+<li>双缓存技术----<code>Fiber树</code>的构建与替换--&gt;对应着<code>DOM树</code>的构建与更新</li>
+</ul>
+<h3 id="双缓存fiber树">双缓存Fiber树</h3>
+<p>在<code>React</code>中最多存在<strong>两棵</strong><code>Fiber树</code>。</p>
+<ul>
+<li>当前屏幕上显示内容对应的<code>Fiber树</code>称为<code>Current Fiber树</code></li>
+<li>正在内存中构建的<code>Fiber树</code>，称为<code>workInProgress Fiber树</code></li>
+</ul>
+<p><code>current Fiber树</code>中的<code>Fiber节点</code>称为<code>current Fiber</code>；同理<code>workInProgress Fiber树</code>中的<code>Fiber节点</code>称为<code>workInProgress Fiber</code>，他们之间通过上文讲过的<code>alternate</code>链接</p>
+<pre><code class="language-javascript">currentFiber.alternate === workInProgressFiber;
+workInProgress.alternate === currentFiber;
+</code></pre>
+<ul>
+<li><code>React</code>应用的根节点通过<code>current</code>指针在不同的<code>Fiber树</code>的<code>rootFiber</code>之间切换来实现<code>Fiber树</code>的切换。</li>
+<li>当<code>workInProgress Fiber树</code>构建完成交付给<code>Renderer</code>渲染页面上之后，应用的根节点的<code>current</code>指针指向<code>workInProgress Fiber树</code>，此时<code>workInProgress Fiber树</code>变更为<code>current Fiber 树</code></li>
+<li>每一次的状态更新都会产生新的<code>workInProgress Fiber树</code>，通过<code>current</code>与<code>workInProgress</code>的交换，完成DOM更新。以下为<code>mount</code>和<code>update</code>时的构建与替换流程</li>
+</ul>
+<h3 id="mount">mount</h3>
+<p>example：</p>
+<pre><code class="language-javascript">function App() {
+    const [count, setCount] = useState(0)
+    return (
+        &lt;p onClick={() =&gt; setCount(count + 1)}&gt;{count}&lt;/p&gt;
+    )
+}
+ReactDOM.render(&lt;App /&gt;, document.getElementById('root'))
+</code></pre>
+<ol>
+<li>
+<ul>
+<li>首次执行<code>ReactDOM.render</code>会创建<code>fiberRootNode</code>（源码里面的<code>fiberRoot</code>）和<code>rootFiber</code>；其中<code>fiberNodeRoot</code>是整个应用根节点，<code>rootFiber</code>是<code>&lt;App /&gt;</code>所在组件树的根节点</li>
+<li>区分<code>fiberRootNode</code>和<code>rootFiber</code>的原因在与，在应用中可以多次调用<code>ReactDOM.render</code>渲染不同的组件树，他们拥有不同的<code>rootFiber</code>。但是整个应用的根节点只有一个，就是<code>fiberRootNode</code></li>
+<li><code>fiberRootNode</code>的<code>current</code>会指向当前页面上已经渲染内容对应的<code>Fiber树</code>----<code>current Fiber 树</code><br>
+<img src="https://qingwu-aby.github.io//post-images/1601972147860.png" alt="" loading="lazy"></li>
+</ul>
+</li>
+</ol>
+<pre><code class="language-javascript">fiberRootNode.current = rootFiber
+</code></pre>
+<pre><code>* 由于是首屏渲染，此时页面还没有挂载任何`DOM`，所以`fiberRootNode.current`指向的`rootFiber`没有任何`子Fiber节点`（`current Fiber树为空`）
+</code></pre>
+<ol start="2">
+<li>
+<ul>
+<li>进入<code>render阶段</code>，根据组件返回的<code>JSX</code>在内存中依次创建<code>Fiber</code> 节点并链接在一起构建<code>Fiber树</code>，这个时候被称为<code>workInProgress Fiber树</code></li>
+<li>在构建<code>workInProgress Fiber树</code>时会尝试复用<code>current Fiber树</code>中已经存在的<code>Fiber 节点</code>内的属性，在<strong>首屏渲染</strong>的时候只有<code>rootFiber</code>存在对应的<code>current Fiber</code>（<code>rootFiber.alternate</code>）</li>
+</ul>
+</li>
+</ol>
+<p>Fiber render阶段：<br>
+<img src="https://qingwu-aby.github.io//post-images/1601979189296.png" alt="" loading="lazy"></p>
+<ol start="3">
+<li>
+<ul>
+<li>上图所示的已经构建完成的<code>workInProgress Fiber树</code>在<code>commit阶段</code>渲染到页面</li>
+<li>此时页面中DOM被重新渲染,<code>current</code>指针指向<code>workInProgress Fiber树</code>，使其成为<code>Current Fiber树</code><br>
+<img src="https://qingwu-aby.github.io//post-images/1601979443787.png" alt="" loading="lazy"></li>
+</ul>
+</li>
+</ol>
+<h3 id="update">update</h3>
+<ol>
+<li>
+<ul>
+<li>我们点击<code>p标签</code>的时候会触发<code>onclick</code>。改变状态值，这个操作会开启一次新的<code>render阶段</code>并构建一个新的<code>workInProgress Fiber树</code><br>
+图示如下：<br>
+<img src="https://qingwu-aby.github.io//post-images/1601979728492.png" alt="" loading="lazy"></li>
+<li>与<code>mount</code>的时候一样，<code>workInProgress Fiber</code>的创建可以复用<code>current fiber树</code>对应的节点数据<br>
+<strong>这个决定是否使用的过程就是diff算法</strong></li>
+</ul>
+</li>
+<li>
+<ul>
+<li><code>workInProgress Fiber 树</code>在<code>render阶段</code>完成构建之后进入<code>commit阶段</code>渲染到页面上。在渲染完毕之后，当前的<code>workInProgress Fiber树</code>变更为<code>current Fiber树</code></li>
+</ul>
+</li>
+</ol>
+<figure data-type="image" tabindex="1"><img src="https://qingwu-aby.github.io//post-images/1601979993153.png" alt="" loading="lazy"></figure>
+<blockquote>
+<p><code>Fiber树</code>的构建和替换的过程会伴随着<code>DOM</code>的更新</p>
+</blockquote>
+<h1 id="react的scheduler-reconciler-renderer架构体系">React的Scheduler-Reconciler-Renderer架构体系</h1>
+<ul>
+<li><code>Reconciler</code>工作的阶段被称作<code>render</code>阶段。因为在该阶段调用组件的<code>render</code>方法</li>
+<li><code>Renderer</code>阶段被称为<code>commit阶段</code>《类似于<code>git commit</code>》，<code>commit阶段</code>会把<code>render</code>提交的信息渲染在页面上</li>
+<li><code>render</code>与<code>commit</code>阶段的统称为<code>work</code>，也就是<code>React</code>的工作流程，如果任务处于<code>Scheduler</code>内部进行调度，不是<code>work</code></li>
+</ul>
+<h1 id="jsx与fiber节点">JSX与Fiber节点</h1>
+<ul>
+<li><code>JSX</code>是一种描述当前组件数据类型的数据结构，不包含<strong>schedule</strong>、<strong>reconcile</strong>、<strong>render</strong>所需要的相关信息
+<ul>
+<li>组件在更新中的<code>优先级</code></li>
+<li>组件的<code>state</code></li>
+<li>组件被打上用于<strong>Reconciler</strong>的标记</li>
+</ul>
+</li>
+<li>在组件<code>mount</code>的时候，<code>Reconciler</code>根据 <code>JSX</code>描述的组件内容生成对应的<code>Fiber节点</code></li>
+<li>在组件<code>update</code>的时候，<code>Reconciler</code>将<code>JSX</code>与<code>Fiber节点</code>保存的数据进行对比，生成组件对应的<code>Fiber节点</code>，并根据对应的结果给<code>Fiber节点</code>打上标记</li>
+</ul>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#fiber-%E6%9E%B6%E6%9E%84">Fiber 架构</a>
+<ul>
+<li><a href="#%E4%BB%A3%E6%95%B0%E6%95%88%E5%BA%94">代数效应</a>
+<ul>
+<li><a href="#%E4%BB%A3%E6%95%B0%E6%95%88%E5%BA%94%E5%9C%A8react%E4%B8%AD%E7%9A%84%E5%BA%94%E7%94%A8">代数效应在React中的应用</a></li>
+<li><a href="#%E4%BB%A3%E6%95%B0%E6%95%88%E5%BA%94%E4%B8%8Egenerator">代数效应与Generator</a></li>
+<li><a href="#%E4%BB%A3%E6%95%B0%E6%95%88%E5%BA%94%E4%B8%8Efiber">代数效应与Fiber</a></li>
+</ul>
+</li>
+<li><a href="#fiber%E7%9A%84%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86">Fiber的实现原理</a>
+<ul>
+<li><a href="#what-is-fiber">What is Fiber</a></li>
+<li><a href="#fiber%E7%9A%84%E7%BB%93%E6%9E%84">Fiber的结构</a></li>
+<li><a href="#fiber%E4%BD%9C%E4%B8%BA%E6%9E%B6%E6%9E%84">Fiber作为架构</a></li>
+<li><a href="#%E4%BD%9C%E4%B8%BA%E9%9D%99%E6%80%81%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84">作为静态的数据结构</a></li>
+<li><a href="#%E4%BD%9C%E4%B8%BA%E5%8A%A8%E6%80%81%E7%9A%84%E5%B7%A5%E4%BD%9C%E5%8D%95%E5%85%83">作为动态的工作单元</a></li>
+</ul>
+</li>
+<li><a href="#fiber%E7%9A%84%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86">Fiber的工作原理</a>
+<ul>
+<li><a href="#%E5%8F%8C%E7%BC%93%E5%AD%98fiber%E6%A0%91">双缓存Fiber树</a></li>
+<li><a href="#mount">mount</a></li>
+<li><a href="#update">update</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#react%E7%9A%84scheduler-reconciler-renderer%E6%9E%B6%E6%9E%84%E4%BD%93%E7%B3%BB">React的Scheduler-Reconciler-Renderer架构体系</a></li>
+<li><a href="#jsx%E4%B8%8Efiber%E8%8A%82%E7%82%B9">JSX与Fiber节点</a></li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://qingwu-aby.github.io/post/E0UjUKnBP/">
+              <h3 class="post-title">
+                React源码系列1---React15和16的差别
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://qingwu-aby.github.io//atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+
+  let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+  // This should probably be throttled.
+  // Especially because it triggers during smooth scrolling.
+  // https://lodash.com/docs/4.17.10#throttle
+  // You could do like...
+  // window.addEventListener("scroll", () => {
+  //    _.throttle(doThatStuff, 100);
+  // });
+  // Only not doing it here to keep this Pen dependency-free.
+
+  window.addEventListener("scroll", event => {
+    let fromTop = window.scrollY;
+
+    mainNavLinks.forEach((link, index) => {
+      let section = document.getElementById(decodeURI(link.hash).substring(1));
+      let nextSection = null
+      if (mainNavLinks[index + 1]) {
+        nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+      }
+      if (section.offsetTop <= fromTop) {
+        if (nextSection) {
+          if (nextSection.offsetTop > fromTop) {
+            link.classList.add("current");
+          } else {
+            link.classList.remove("current");    
+          }
+        } else {
+          link.classList.add("current");
+        }
+      } else {
+        link.classList.remove("current");
+      }
+    });
+  });
+
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>
