@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>React源码系列2----React Fiber | Abyss</title>
 <meta name="description" content="温故而知新" />
-<link rel="shortcut icon" href="https://qingwu-aby.github.io//favicon.ico?v=1601982228114">
+<link rel="shortcut icon" href="https://qingwu-aby.github.io//favicon.ico?v=1601982378678">
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://qingwu-aby.github.io//styles/main.css">
@@ -20,7 +20,7 @@
       <div class="main-content">
         <div class="site-header">
   <a href="https://qingwu-aby.github.io/">
-  <img class="avatar" src="https://qingwu-aby.github.io//images/avatar.png?v=1601982228114" alt="">
+  <img class="avatar" src="https://qingwu-aby.github.io//images/avatar.png?v=1601982378678" alt="">
   </a>
   <h1 class="site-title">
     Abyss
@@ -87,7 +87,11 @@
             
             <div class="post-content-wrapper">
               <div class="post-content">
-                <p><strong>Scheduler-Reconciler-Renderer</strong></p>
+                <blockquote>
+<p>React Fiber架构<br>
+<strong>Scheduler-Reconciler-Renderer</strong></p>
+</blockquote>
+<!-- more -->
 <h1 id="fiber-架构">Fiber 架构</h1>
 <h2 id="代数效应">代数效应</h2>
 <blockquote>
@@ -136,8 +140,9 @@
 </blockquote>
 <h3 id="fiber的结构">Fiber的结构</h3>
 <blockquote>
-<p><a href="Fiber%E8%8A%82%E7%82%B9%E5%AE%9A%E4%B9%89">https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiber.new.js#L117</a></p>
+<p><a href="https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiber.new.js#L117">Fiber节点定义</a></p>
 </blockquote>
+<!-- more -->
 <pre><code class="language-javascript">function FiberNode (
     tag: WorkTag,
     pendingProps: mixed,

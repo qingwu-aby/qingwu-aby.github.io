@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Abyss</title>
 <meta name="description" content="温故而知新" />
-<link rel="shortcut icon" href="https://qingwu-aby.github.io//favicon.ico?v=1601982228114">
+<link rel="shortcut icon" href="https://qingwu-aby.github.io//favicon.ico?v=1601982378678">
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://qingwu-aby.github.io//styles/main.css">
@@ -20,7 +20,7 @@
       <div class="main-content">
         <div class="site-header">
   <a href="https://qingwu-aby.github.io/">
-  <img class="avatar" src="https://qingwu-aby.github.io//images/avatar.png?v=1601982228114" alt="">
+  <img class="avatar" src="https://qingwu-aby.github.io//images/avatar.png?v=1601982378678" alt="">
   </a>
   <h1 class="site-title">
     Abyss
@@ -107,99 +107,10 @@
       </div>
       
       <div class="post-abstract">
-        <p><strong>Scheduler-Reconciler-Renderer</strong></p>
-<h1 id="fiber-架构">Fiber 架构</h1>
-<h2 id="代数效应">代数效应</h2>
-<blockquote>
-<p><code>代数效应</code>用于将<code>副作用</code>从<code>函数</code>中分离，保持函数的纯粹性</p>
+        <blockquote>
+<p>React Fiber架构<br>
+<strong>Scheduler-Reconciler-Renderer</strong></p>
 </blockquote>
-<h3 id="代数效应在react中的应用">代数效应在React中的应用</h3>
-<blockquote>
-<p><code>For example</code>---&gt;<code>Hooks</code>;对于<code>useState</code>,<code>useReducer</code>,<code>useRef</code>，我们不需要关注<code>FunctionComponent</code>的<code>state</code>在<code>Hook</code>中如何保存</p>
-</blockquote>
-<pre><code class="language-javascript">function App() {
-    const [count, setCount] = useState(0)
-    const handleClick = () =&gt; {
-        setCount(count =&gt; count + 1)
-    }
-    return (
-        &lt;button onClick={handleClick}&gt;{count}&lt;/button&gt;
-    )
-}
-</code></pre>
-<h3 id="代数效应与generator">代数效应与Generator</h3>
-<blockquote>
-<p>从<code>React15</code>到<code>React16</code><strong>Reconciler</strong>的架构从<code>同步更新</code>变更到了<code>可中断的异步更新</code><br>
-<code>异步可中断更新</code>：更新的执行过程中随时可能会被中断（浏览器时间分片用尽或者更高优先级的任务插队），当可以继续执行的时候恢复之前执行的中间状态<br>
-<code>Generator</code>实现异步可中断更新</p>
-</blockquote>
-<h3 id="代数效应与fiber">代数效应与Fiber</h3>
-<blockquote>
-<p><code>React Fiber</code>: 类似于<code>协程</code></p>
-<ul>
-<li><code>React</code>内部的一套状态更新机制。支持不同的<code>优先级</code>，可以更新和恢复，并且在恢复之后可以服用之前的<code>中间状态</code></li>
-<li>其中每个任务更新单元为<code>React Element</code>对应的<code>Fiber</code>节点---<strong>虚拟DOM</strong></li>
-</ul>
-</blockquote>
-<h2 id="fiber的实现原理">Fiber的实现原理</h2>
-<blockquote>
-<p><code>Fiber</code>之前的架构导致的问题： <code>Reconciler</code>采用递归的方式去更新虚拟DOM，递归过程是不能中断的。如果组件树的层级很深，递归就会占用线程大量的时间和资源，造成页面卡顿<br>
-<code>React16</code>将<code>递归的无法中断的更新</code>重构为<code>异步的可中断更新</code>，由此产生了新的<code>Fiber</code>架构</p>
-</blockquote>
-<h3 id="what-is-fiber">What is Fiber</h3>
-<blockquote>
-<ul>
-<li>作为架构来说，<code>React15</code>的<code>Reconciler</code>采用递归的方式去执行，数据保存在<strong>递归调用栈</strong>中---<code>Stack Reconciler</code>。<code>React16</code>的<code>Reconciler</code>基于<code>Fiber节点</code>----<code>Fiber Reconciler</code></li>
-<li>作为静态数据结构来说，每一个<code>Fiber节点</code>对应一个<code>React Element</code>，保存了该组件的类型（class\FunctionComponent\HostComponent）、对应的DOM节点信息</li>
-<li>作为动态的工作单元来说，每一个<code>Fiber节点</code>保存了本次更新中该组件改变的状态、要执行的工作等（增加\删除\更新...）</li>
-</ul>
-</blockquote>
-<h3 id="fiber的结构">Fiber的结构</h3>
-<blockquote>
-<p><a href="Fiber%E8%8A%82%E7%82%B9%E5%AE%9A%E4%B9%89">https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiber.new.js#L117</a></p>
-</blockquote>
-<pre><code class="language-javascript">function FiberNode (
-    tag: WorkTag,
-    pendingProps: mixed,
-    key: null | string,
-    mode: TypeOfMode
-) {
-    // 作为静态数据结构的属性
-    this.tag = tag;
-    this.key = key;
-    this.elementType = null;
-    this.type = null;
-    this.statNode = null;
-
-    // 用于链接其他Fiber节点形成Fiber树
-    this.return = null;
-    this.child = null;
-    this.sibling = null;
-    this.index = 0;
-
-    this.ref = null;
-
-    // 作为动态的动作单元的属性
-    this.penfingProps = pendingProps;
-    this.memoizedProps = null;
-    this.updateQuene = null;
-    this.memoizedState = null;
-    this.dependencies = null;
-
-    this.mode = mode;
-
-    this.effectTag = NoEffect;
-    this.nextEffect = null;
-
-    this.firstEffect = null;
-    this.lastEffect = null;
-
-    //调度优先级
-    this.lanes = NoLanes;
-    this.childLanes = NoLanes;
-
-    //指向该fiber在另一次更新时候对应的fiber，双缓存的时候链接current Fiber和workInProgress Fiber
-    this.alternate = null;</code></pre>
 
       </div>
     </article>
@@ -219,7 +130,8 @@
       </div>
       
       <div class="post-abstract">
-        
+        <p>React不同版本源码的差异</p>
+
       </div>
     </article>
   
