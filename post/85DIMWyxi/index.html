@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>React源码系列3---Render阶段 | Abyss</title>
 <meta name="description" content="温故而知新" />
-<link rel="shortcut icon" href="https://qingwu-aby.github.io//favicon.ico?v=1601982397704">
+<link rel="shortcut icon" href="https://qingwu-aby.github.io//favicon.ico?v=1602075252324">
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://qingwu-aby.github.io//styles/main.css">
@@ -20,7 +20,7 @@
       <div class="main-content">
         <div class="site-header">
   <a href="https://qingwu-aby.github.io/">
-  <img class="avatar" src="https://qingwu-aby.github.io//images/avatar.png?v=1601982397704" alt="">
+  <img class="avatar" src="https://qingwu-aby.github.io//images/avatar.png?v=1602075252324" alt="">
   </a>
   <h1 class="site-title">
     Abyss
@@ -80,7 +80,7 @@
                 2020-10-06
               </span>
               <span>
-                1 min read
+                7 min read
               </span>
               
             </div>
@@ -92,10 +92,333 @@
 如何构建一棵<code>Fiber树</code>？</p>
 </blockquote>
 <!-- more -->
+<h1 id="render-流程">render 流程</h1>
+<p><code>render阶段</code>开始于<code>performSyncWorkOnRoot</code>或者<code>performConcurrentWorkOnRoot</code>的方法调用。具体的调用方法取决与是同步还是异步的</p>
+<blockquote>
+<p>performSyncWorkOnRoot:</p>
+</blockquote>
+<pre><code class="language-javascript">// performSyncWorkOnRoot同步调用会执行这个方法
+function workLoopSync() {
+    while(workInProgress !== null) {
+        // do something
+        performUnitOfWork(workInProgress)
+    }
+}
+</code></pre>
+<pre><code class="language-javascript">//performConcurrentWorkOnRoot异步调用执行
+function workLoopConcurrent() {
+    while(workInProgress !== null &amp;&amp; !shouldYield()) {
+        performUnitOfWork(workInProgress)
+    }
+}
+</code></pre>
+<ul>
+<li>同步调用和异步调用的区别在于是否调用<code>shouldYield()</code>，用于判断当前关键帧是否还有剩余时间；如果当前浏览器帧没有剩余时间的话,<code>shouldYield</code>则会中止循环过程，直到浏览器有剩余时间</li>
+<li><code>workInProgress</code>代表当前已经创建的<code>workInProgress Fiber</code></li>
+<li><code>preformUnitOfWork</code>方法会创建下一个<code>Fiber节点</code>并赋值给<code>wornInProgress</code>，并将<code>workInProgress</code>与已经创建的<code>Fiber 节点</code>连接起来构成<code>Fiber 树</code></li>
+<li><code>Fiber Reconciler</code>来自于<code>Stack Reconciler</code>，通过遍历的方式实现可以中断的递归</li>
+<li><a href="https://github.com/facebook/react/blob/970fa122d8188bafa600e9b5214833487fbf1092/packages/react-reconciler/src/ReactFiberWorkLoop.new.js#L1599">workLoopConcurrent</a>调用的主要方法就是<a href="https://github.com/facebook/react/blob/970fa122d8188bafa600e9b5214833487fbf1092/packages/react-reconciler/src/ReactFiberWorkLoop.new.js#L1606">performUnitOfWork</a>, <code>performUnitOfWork</code>也因此分为两个阶段</li>
+</ul>
+<h2 id="递">'递'</h2>
+<ul>
+<li>从<code>rootFiber</code>开始，向下，深度优先遍历（栈结构）。为遍历到的每一个<code>Fiber 节点</code>调用<a href="https://github.com/facebook/react/blob/970fa122d8188bafa600e9b5214833487fbf1092/packages/react-reconciler/src/ReactFiberBeginWork.new.js#L3058">beginWork</a></li>
+<li><a href="https://github.com/facebook/react/blob/970fa122d8188bafa600e9b5214833487fbf1092/packages/react-reconciler/src/ReactFiberBeginWork.new.js#L3058">beginWork</a>会根据传入的<code>Fiber 节点</code>创建一个<code>子Fiber节点</code>，并将这两个节点链接起来</li>
+<li>当遍历到子节点的时候就会进行到<code>归</code>的阶段</li>
+</ul>
+<h2 id="归">'归'</h2>
+<ul>
+<li>在这一阶段会调用<a href="https://github.com/facebook/react/blob/970fa122d8188bafa600e9b5214833487fbf1092/packages/react-reconciler/src/ReactFiberCompleteWork.new.js#L652">completeWork</a>来处理<code>Fiber节点</code></li>
+<li>当某个<code>Fiber节点</code>执行完<code>completeWork</code>，如果存在其<code>兄弟节点</code>（<code>fiber.sibling !== null</code>）,将会进入<code>兄弟Fiber</code>的‘递’阶段</li>
+<li><strong>递****归</strong>的过程会交错执行，一直到<strong>归</strong>到最终的<code>rootFiber</code>。最后，<code>render阶段</code>结束</li>
+</ul>
+<h3 id="example">Example：</h3>
+<p>使用上一节用到的<code>FunctionComponent</code>：</p>
+<pre><code class="language-javascript">function App() {
+    return (
+        &lt;div&gt;
+            hello
+            &lt;span&gt;React&lt;/span&gt;
+        &lt;/div&gt;
+    )
+}
+</code></pre>
+<p><code>Fiber树</code>结构如下：<br>
+<img src="https://qingwu-aby.github.io//post-images/1602065787452.png" alt="" loading="lazy"><br>
+<code>render阶段</code>执行过程：</p>
+<blockquote>
+<ol>
+<li>rootFiber        beginWork</li>
+<li>App Fiber       beginWork</li>
+<li>div Fiber        beginWork</li>
+<li>&quot;Hello&quot; Fiber  beginWork</li>
+<li>&quot;Hello&quot; Fiber  completeWork</li>
+<li>span Fiber     beginWork<br>
+<s>7. &quot;React&quot; Fiber beginWork // React会优化单一文本节点，所以并不会出现</s><br>
+<s>8. &quot;React&quot; Fiber completeWork</s></li>
+<li>span Fiber     completeWork</li>
+<li>div Fiber      completeWork</li>
+<li>App Fiber     completeWork</li>
+<li>rootFiber     completeWork</li>
+</ol>
+</blockquote>
+<p><strong>performUnitOfWork递归写法：</strong></p>
+<pre><code class="language-javascript">function performUnitOfWork(fiber)  {
+    // beginWork()
+    if (fiber.child) {
+        performUnitOfWork(fiber.child)
+    }
+    // completeWork
+    if (fiber.sibling) {
+        performUnitOfWork(fiber.sibling)
+    }
+}
+</code></pre>
+<h1 id="beginwork">beginWork</h1>
+<blockquote>
+<p><code>beginWork</code>的工作是传入当前的<code>fiber 节点</code>，创建<code>子Fiber节点</code></p>
+</blockquote>
+<pre><code class="language-javascript">function beginWork(
+    current: Fiber | null, // 
+    workInProgress: Fiber,
+    renderLanes: Lanes
+): Fiber | null {
+    // do something
+}
+</code></pre>
+<p>参数：</p>
+<ul>
+<li>current:  当前组件对应的<code>Fiber</code>节点在上一次更新时候的 <code>Fiber</code>----<code>workInProgress.alternate</code></li>
+<li>workInProgress: 当前组件对应的<code>Fiber节点</code></li>
+<li>renderLanes： 优先级</li>
+</ul>
+<blockquote>
+<p>在<a href="https://qingwu-aby.github.io/post/BlZ715Y5q/#%E5%8F%8C%E7%BC%93%E5%AD%98fiber%E6%A0%91">双缓存机制</a>这一块有提到，组件<code>mount</code>的时候，因为是在首屏渲染，此时页面并没有挂载DOM，是不存在当前组件对应的<code>Fiber 节点</code>在上次更新时的<code>Fiber 节点</code>的，也就是说，在<code>mount</code>的时候<code>current === null</code></p>
+</blockquote>
+<blockquote>
+<p><strong>current === null</strong>来判断组件当前是在<code>mount</code>还是<code>update</code></p>
+</blockquote>
+<p>基于组件所处的不同状态（<code>mount</code>和<code>update</code>），<code>beginWork</code>可以分为两个部分：</p>
+<ul>
+<li><code>mount</code>时： 除<code>fiberRootNode</code>之外，<code>current === null</code>。会根据<code>fiber.tag</code>的不同，创建不同的<code>子Fiber节点</code></li>
+<li><code>update</code>时：如果<code>current</code>存在，在满足条件的时候可以复用<code>current</code>节点，克隆<code>current.child</code>作为<code>workInProgress.child</code> ,而不需要新建一个<code>workInProgress.child</code></li>
+</ul>
+<pre><code class="language-javascript">function beginWork(
+  current: Fiber | null,
+  workInProgress: Fiber,
+  renderLanes: Lanes
+): Fiber | null {
+
+  // update时：如果current存在可能存在优化路径，可以复用current（即上一次更新的Fiber节点）
+  if (current !== null) {
+    // ...省略
+
+    // 复用current
+    return bailoutOnAlreadyFinishedWork(
+      current,
+      workInProgress,
+      renderLanes,
+    );
+  } else {
+    didReceiveUpdate = false;
+  }
+
+  // mount时：根据tag不同，创建不同的子Fiber节点
+  switch (workInProgress.tag) {
+    case IndeterminateComponent: 
+      // ...省略
+    case LazyComponent: 
+      // ...省略
+    case FunctionComponent: 
+      // ...省略
+    case ClassComponent: 
+      // ...省略
+    case HostRoot:
+      // ...省略
+    case HostComponent:
+      // ...省略
+    case HostText:
+      // ...省略
+    // ...省略其他类型
+  }
+}
+</code></pre>
+<h2 id="update">update</h2>
+<p>在<code>update</code>的时候可以直接复用前一次更新的<code>子Fiber</code>，不需要新建<code>子Fiber</code>的情况,即<code>didReceiveUpdate === false</code></p>
+<pre><code class="language-javascript">if (current !== null) {
+    const oldProps = current.memoizedProps;
+    const newProps = workInProgress.pendingProps;
+
+    if (
+      oldProps !== newProps ||
+      hasLegacyContextChanged() ||
+      (__DEV__ ? workInProgress.type !== current.type : false)
+    ) {
+      didReceiveUpdate = true;
+    } else if (!includesSomeLane(renderLanes, updateLanes)) {
+      didReceiveUpdate = false;
+      switch (workInProgress.tag) {
+        // 省略处理
+      }
+      return bailoutOnAlreadyFinishedWork(
+        current,
+        workInProgress,
+        renderLanes,
+      );
+    } else {
+      didReceiveUpdate = false;
+    }
+  } else {
+    didReceiveUpdate = false;
+  }
+</code></pre>
+<ol>
+<li>当<code>oldProps === newProps &amp;&amp; workInProgress.type === current.type</code>,也就是在<code>type</code>和<code>props</code>不变的情况下</li>
+<li><code>!includesSomeLane(renderLanes, updateLanes)</code>,当前的<code>Fiber节点</code>优先级较低的时候</li>
+</ol>
+<h2 id="mount">mount</h2>
+<p>当不满足优化的路径的时候，就会去新建<code>子Fiber</code><br>
+根据<code>fiber.tag</code>的不同，进入不同类型的<code>Fiber</code>去创建逻辑</p>
+<pre><code class="language-javascript">// mount时：根据tag不同，创建不同的Fiber节点
+switch (workInProgress.tag) {
+  case IndeterminateComponent: 
+    // ...省略
+  case LazyComponent: 
+    // ...省略
+  case FunctionComponent: 
+    // ...省略
+    return updateFunctionComponent(
+        current,
+        workInProgress,
+        Component,
+        resolvedProps,
+        renderLanes,
+      )
+  case ClassComponent: 
+    // ...省略
+    return updateClassComponent(
+        current,
+        workInProgress,
+        Component,
+        resolvedProps,
+        renderLanes,
+      )
+  case HostRoot:
+    // ...省略
+  case HostComponent:
+    return updateHostComponent(current, workInProgress, renderLanes);
+  case HostText:
+    // ...省略
+  case SuspenseComponent:
+     // ...省略 
+  case HostPortal:
+    // ...省略
+  case ForwardRef: 
+    // ...省略
+  case Fragment:
+    // ...省略
+  case Mode:
+    // ...省略
+  case Profiler:
+    // ...省略
+  case ContextProvider:
+    // ...省略
+  case ContextConsumer:
+    // ...省略
+  // ...省略其他类型
+}
+</code></pre>
+<blockquote>
+<p><code>React</code>组件类型<a href="https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactWorkTags.js#L10">TagType</a></p>
+</blockquote>
+<p>对于常见的组件类型： <code>FunctionComponent</code>/<code>ClassComponent</code>/<code>HostComponent</code>,他们分别调用了<code>updateFunctionComponent</code>/<code>updateClassComponent</code>/<code>updateHostComponent</code>,根据源码找到最终调用了<a href="https://github.com/facebook/react/blob/1fb18e22ae66fdb1dc127347e169e73948778e5a/packages/react-reconciler/src/ReactFiberBeginWork.new.js#L233">reconcileChildren</a></p>
+<h2 id="reconcilerchilren">reconcilerChilren</h2>
+<p>作为<code>Reconciler</code>模块的核心方法：</p>
+<ul>
+<li>对于<code>mount</code>的组件，他会创建一个新的<code>子Fiber节点</code></li>
+<li>对于<code>update</code>的组件，他会将当前组件与该组件上次更新时对应时<code>Fiber 节点</code>比较（<strong>diff算法</strong>），将比较的结果生成新的<code>Fiber节点</code></li>
+</ul>
+<pre><code class="language-javascript">function reconcileChildren(
+  current: Fiber | null,
+  workInProgress: Fiber,
+  nextChildren: any,
+  renderLanes: Lanes,
+) {
+  if (current === null) {
+    // If this is a fresh new component that hasn't been rendered yet, we
+    // won't update its child set by applying minimal side-effects. Instead,
+    // we will add them all to the child before it gets rendered. That means
+    // we can optimize this reconciliation pass by not tracking side-effects.
+    workInProgress.child = mountChildFibers(
+      workInProgress,
+      null,
+      nextChildren,
+      renderLanes,
+    );
+  } else {
+    // If the current child is the same as the work in progress, it means that
+    // we haven't yet started any work on these children. Therefore, we use
+    // the clone algorithm to create a copy of all the current children.
+
+    // If we had any progressed work already, that is invalid at this point so
+    // let's throw it out.
+    workInProgress.child = reconcileChildFibers(
+      workInProgress,
+      current.child,
+      nextChildren,
+      renderLanes,
+    );
+  }
+}
+</code></pre>
+<blockquote>
+<p><code>mountChildFibers</code>和<code>reconcileChildFibers</code>都调用了同一个方法<a href="https://github.com/facebook/react/blob/master/packages/react-reconciler/src/ReactChildFiber.new.js#L1405">ChildReconciler</a>，唯一不同的一点是<code>reconcileChildFibers</code>会为生成的<code>Fiber节点</code>带上<code>flags</code>属性，而<code>mountChildFibers</code>不会<br>
+最终他会生成新的<code>子Fiber节点</code>赋值给<code>workInProgress.child</code>，作为本次<code>beginWork</code>的返回值<code>return workInProgress.child</code>，并作为下次<code>preformUnitOfWork</code>下次执行的<code>workInProgress = next</code>传参</p>
+</blockquote>
+<h2 id="flags">flags</h2>
+<ul>
+<li>因为<strong>Renderer阶段</strong>是在内存中进行的，当工作结束之后会通知<code>Renderer</code>需要执行的DOM操作；</li>
+<li>需要执行的操作类型就是<code>flags</code></li>
+</ul>
+<blockquote>
+<p><a href="https://github.com/facebook/react/blob/master/packages/react-reconciler/src/ReactFiberFlags.js">ReactFiberFlags</a></p>
+</blockquote>
+<h2 id="beginwork流程图">beginWork流程图：</h2>
+<figure data-type="image" tabindex="1"><img src="https://qingwu-aby.github.io//post-images/1602074983811.png" alt="" loading="lazy"></figure>
+<h1 id="completework">completeWork</h1>
+<pre><code class="language-javascript">function completeWork(
+    current: Fiber | null,
+    workInProgress: Fiber,
+    renderLanes: Lanes
+): Fiber | null {
+    // do something
+}
+</code></pre>
 
               </div>
               <div class="toc-container">
-                
+                <ul class="markdownIt-TOC">
+<li><a href="#render-%E6%B5%81%E7%A8%8B">render 流程</a>
+<ul>
+<li><a href="#%E9%80%92">'递'</a></li>
+<li><a href="#%E5%BD%92">'归'</a>
+<ul>
+<li><a href="#example">Example：</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#beginwork">beginWork</a>
+<ul>
+<li><a href="#update">update</a></li>
+<li><a href="#mount">mount</a></li>
+<li><a href="#reconcilerchilren">reconcilerChilren</a></li>
+<li><a href="#flags">flags</a></li>
+<li><a href="#beginwork%E6%B5%81%E7%A8%8B%E5%9B%BE">beginWork流程图：</a></li>
+</ul>
+</li>
+<li><a href="#completework">completeWork</a></li>
+</ul>
+
               </div>
             </div>
           </article>

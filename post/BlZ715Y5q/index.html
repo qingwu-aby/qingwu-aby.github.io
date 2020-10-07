@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>React源码系列2----React Fiber | Abyss</title>
 <meta name="description" content="温故而知新" />
-<link rel="shortcut icon" href="https://qingwu-aby.github.io//favicon.ico?v=1601982495751">
+<link rel="shortcut icon" href="https://qingwu-aby.github.io//favicon.ico?v=1602075252324">
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://qingwu-aby.github.io//styles/main.css">
@@ -20,7 +20,7 @@
       <div class="main-content">
         <div class="site-header">
   <a href="https://qingwu-aby.github.io/">
-  <img class="avatar" src="https://qingwu-aby.github.io//images/avatar.png?v=1601982495751" alt="">
+  <img class="avatar" src="https://qingwu-aby.github.io//images/avatar.png?v=1602075252324" alt="">
   </a>
   <h1 class="site-title">
     Abyss
@@ -213,7 +213,7 @@ this.sibling = null;
 }
 </code></pre>
 <p>对应的<code>Fiber树</code>结构：<br>
-<img src="https://qingwu-aby.github.io//post-images/1601717220480.png" alt="" loading="lazy"></p>
+<img src="https://qingwu-aby.github.io//post-images/1602065772823.png" alt="" loading="lazy"></p>
 <blockquote>
 <blockquote>
 <p><code>return</code>指节点执行完<code>completeWork</code>之后会返回的下一个节点，子节点及其兄弟节点在完成工作之后会返回其父级节点</p>
@@ -295,8 +295,9 @@ ReactDOM.render(&lt;App /&gt;, document.getElementById('root'))
 </ol>
 <pre><code class="language-javascript">fiberRootNode.current = rootFiber
 </code></pre>
-<pre><code>* 由于是首屏渲染，此时页面还没有挂载任何`DOM`，所以`fiberRootNode.current`指向的`rootFiber`没有任何`子Fiber节点`（`current Fiber树为空`）
-</code></pre>
+<blockquote>
+<p>由于是首屏渲染，此时页面还没有挂载任何<code>DOM</code>，所以<code>fiberRootNode.current</code>指向的<code>rootFiber</code>没有任何<code>子Fiber节点</code>（<code>current Fiber树为空</code>）</p>
+</blockquote>
 <ol start="2">
 <li>
 <ul>
