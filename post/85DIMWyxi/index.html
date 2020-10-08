@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>React源码系列3---Render阶段 | Abyss</title>
 <meta name="description" content="温故而知新" />
-<link rel="shortcut icon" href="https://qingwu-aby.github.io//favicon.ico?v=1602075252324">
+<link rel="shortcut icon" href="https://qingwu-aby.github.io//favicon.ico?v=1602148489465">
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://qingwu-aby.github.io//styles/main.css">
@@ -20,7 +20,7 @@
       <div class="main-content">
         <div class="site-header">
   <a href="https://qingwu-aby.github.io/">
-  <img class="avatar" src="https://qingwu-aby.github.io//images/avatar.png?v=1602075252324" alt="">
+  <img class="avatar" src="https://qingwu-aby.github.io//images/avatar.png?v=1602148489465" alt="">
   </a>
   <h1 class="site-title">
     Abyss
@@ -80,7 +80,7 @@
                 2020-10-06
               </span>
               <span>
-                7 min read
+                9 min read
               </span>
               
             </div>
@@ -385,14 +385,137 @@ switch (workInProgress.tag) {
 <h2 id="beginwork流程图">beginWork流程图：</h2>
 <figure data-type="image" tabindex="1"><img src="https://qingwu-aby.github.io//post-images/1602074983811.png" alt="" loading="lazy"></figure>
 <h1 id="completework">completeWork</h1>
+<blockquote>
+<p>组件执行<code>beginWork</code>之后会创建<code>子Fiber节点</code>，节点上面可能存在<code>flags</code>属性<br>
+<a href="https://github.com/facebook/react/blob/4ead6b53057ee6c6129a6d2f6e264232130b1fce/packages/react-reconciler/src/ReactFiberCompleteWork.new.js#L800">completeWork</a></p>
+</blockquote>
+<p>和<code>beginWork</code>类似，<code>completeWork</code>也是根据不同的类型<code>fiber.tag</code>处理不同的逻辑</p>
 <pre><code class="language-javascript">function completeWork(
     current: Fiber | null,
     workInProgress: Fiber,
     renderLanes: Lanes
 ): Fiber | null {
-    // do something
+    const newProps = workInProgress.pendingProps;
+    switch (workInProgress.tag) {
+        case IndeterminateComponent:
+        case LazyComponent:
+        case SimpleMemoComponent:
+        case FunctionComponent:
+        case ForwardRef:
+        case Fragment:
+        case Mode:
+        case Profiler:
+        case ContextConsumer:
+        case MemoComponent:
+        return null;
+        case ClassComponent: {
+        // ...省略
+        return null;
+        }
+        case HostRoot: {
+        // ...省略
+        updateHostContainer(workInProgress);
+        return null;
+        }
+        case HostComponent: {
+        // ...省略
+        return null;
+        }
+    }
+// ...省略
 }
 </code></pre>
+<ul>
+<li>首先看一下与页面<code>DOM</code>渲染相关的<code>Fiber节点</code>----<code>HostComponent</code></li>
+</ul>
+<h2 id="hostcomponet">HostComponet</h2>
+<p>与上面所说的<code>beginWork</code>类似的是，我们同样根据<code>current === null</code> 判断当前页面是<code>mount</code>还是<code>update</code>，同时需要注意的是在<code>update</code>的时候<code>Fiber节点</code>是否存在对应的<code>DOM节点</code>，即<code>workInProgress.stateNode !== null</code></p>
+<pre><code class="language-javascript">case HostComponent: {
+    popHostContext(workInProgress)
+    const rootContainerInstance = getRootHostContainer()
+    const type = workInPropgress.type
+
+    if (current !== null &amp;&amp; workInProgress.stateNode !== null) {
+        // update,---&gt; ## update
+    } else {
+        // mount
+    }
+    return null
+}
+</code></pre>
+<h2 id="update-2">update</h2>
+<p>当<code>update</code>的时候，<code>Fiber节点</code>已经存在对应的<code>DOM节点</code>，不需要生成<code>DOM</code>；主要工作在于处理<code>props</code>: <strong>事件回调</strong>，<strong>style</strong>， <strong>children</strong>...</p>
+<pre><code class="language-javascript">if (current !== null &amp;&amp; workInProgress.stateNode !== null) {
+    //update
+    updateHostComponent(
+        current,
+        workInProgress,
+        type,
+        newProps,
+        rootContainerInstance
+    )
+}
+</code></pre>
+<blockquote>
+<p><a href="https://github.com/facebook/react/blob/master/packages/react-reconciler/src/ReactFiberCompleteWork.new.js#L242">updateHostComponent</a>方法定义</p>
+</blockquote>
+<pre><code class="language-javascript"> const updatePayload = prepareUpdate(
+      instance,
+      type,
+      oldProps,
+      newProps,
+      rootContainerInstance,
+      currentHostContext,
+    );
+    // TODO: Type this specific to this type of component.
+    workInProgress.updateQueue = (updatePayload: any);
+</code></pre>
+<p>在<a href="https://github.com/facebook/react/blob/master/packages/react-reconciler/src/ReactFiberCompleteWork.new.js#L242">updateHostComponent</a>内部<code>props</code>处理完了之后，会赋值给<code>workInProgress.updateQueue = (updatePayload: any)</code>,并在最终<code>commit阶段</code>进行渲染</p>
+<h2 id="mount-2">mount</h2>
+<p>在<code>mount</code>的时候主要逻辑：</p>
+<ul>
+<li>为<code>Fiber节点</code>生成对应的<code>DOM节点</code></li>
+<li>将<code>子节点</code>插入生成的<code>DOM节点</code>中</li>
+<li>处理<code>props</code></li>
+</ul>
+<pre><code class="language-javascript">
+const currentHostContext = getHostContext();
+// 为fiber创建对应DOM节点
+const instance = createInstance(
+    type,
+    newProps,
+    rootContainerInstance,
+    currentHostContext,
+    workInProgress,
+  );
+// 将子孙DOM节点插入刚生成的DOM节点中
+appendAllChildren(instance, workInProgress, false, false);
+// DOM节点赋值给fiber.stateNode
+workInProgress.stateNode = instance;
+
+// 与update逻辑中的updateHostComponent类似的处理props的过程
+if (
+  finalizeInitialChildren(
+    instance,
+    type,
+    newProps,
+    rootContainerInstance,
+    currentHostContext,
+  )
+) {
+  markUpdate(workInProgress);
+}
+</code></pre>
+<blockquote>
+<p><code>mount</code>时只会在<code>rootFiber</code>存在<code>PlaceMent``flags</code>；<br>
+因为<code>completeWork</code>是处于<code>归</code>阶段调用的方法，每次调用<code>appendAllChildren</code>的时候，都会将已经生成的<code>子DOM节点</code>插入到当前的已经生成的<code>DOM节点下</code>。当<strong>归</strong>阶段执行到<code>rootFiber</code>时，我们已经可以得到一个构建好的<code>DOM树</code></p>
+</blockquote>
+<h1 id="流程结束">流程结束</h1>
+<p>至此，render阶段全部工作完成。在performSyncWorkOnRoot函数中fiberRootNode被传递给commitRoot方法，开启commit阶段工作流程。<a href="https://github.com/facebook/react/blob/master/packages/react-reconciler/src/ReactFiberWorkLoop.new.js#L1049">commitRoot</a></p>
+<pre><code class="language-javascript">commitRoot(root)
+</code></pre>
+<h1 id="complete-流程图">complete 流程图</h1>
+<figure data-type="image" tabindex="2"><img src="https://qingwu-aby.github.io//post-images/1602148486898.png" alt="" loading="lazy"></figure>
 
               </div>
               <div class="toc-container">
@@ -416,7 +539,15 @@ switch (workInProgress.tag) {
 <li><a href="#beginwork%E6%B5%81%E7%A8%8B%E5%9B%BE">beginWork流程图：</a></li>
 </ul>
 </li>
-<li><a href="#completework">completeWork</a></li>
+<li><a href="#completework">completeWork</a>
+<ul>
+<li><a href="#hostcomponet">HostComponet</a></li>
+<li><a href="#update-2">update</a></li>
+<li><a href="#mount-2">mount</a></li>
+</ul>
+</li>
+<li><a href="#%E6%B5%81%E7%A8%8B%E7%BB%93%E6%9D%9F">流程结束</a></li>
+<li><a href="#complete-%E6%B5%81%E7%A8%8B%E5%9B%BE">complete 流程图</a></li>
 </ul>
 
               </div>
