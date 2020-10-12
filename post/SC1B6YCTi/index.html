@@ -1,0 +1,354 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>React源码系列4---commit阶段 | Abyss</title>
+<meta name="description" content="温故而知新" />
+<link rel="shortcut icon" href="https://qingwu-aby.github.io//favicon.ico?v=1602495206513">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://qingwu-aby.github.io//styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://qingwu-aby.github.io/">
+  <img class="avatar" src="https://qingwu-aby.github.io//images/avatar.png?v=1602495206513" alt="">
+  </a>
+  <h1 class="site-title">
+    Abyss
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              React源码系列4---commit阶段
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-10-06
+              </span>
+              <span>
+                5 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <blockquote>
+<p><code>render阶段</code>中最后调用的<code>commitRoot</code>是<code>commit阶段</code>的工作起点。<code>fiberRootNode</code>作为传参<code>commitRoot(root)</code></p>
+</blockquote>
+<!-- more -->
+<h1 id="commit">commit</h1>
+<ul>
+<li><s>在<code>rootFiber.firstEffct</code>上保存了一条需要执行<code>副作用</code>的<code>Fiber节点</code>的单向链表<code>effectList</code></s>,最近的一次更新使用了<code>subtreeHasEffects</code>和<code>rootHasEffect</code>获取<code>副作用</code>的<code>Fiber节点</code><br>
+，这些<code>Fiber节点</code>的<code>updateQueue</code>中保存了变化的<code>props</code></li>
+<li>这些<code>副作用</code>对应的<code>DOM操作</code>会在<code>commit阶段</code>执行</li>
+<li>部分生命周期钩子函数<code>componentDid***</code>，<code>hook</code>（<code>useEffect</code>）需要在<code>commit阶段</code>执行</li>
+</ul>
+<p><code>commit阶段</code>的主要工作（即<code>Renderer</code>的工作流程）：</p>
+<ol>
+<li><code>before mutation</code>阶段（执行<code>DOM操作</code>之前）</li>
+<li><code>mutation</code>阶段（执行<code>DOM</code>操作）</li>
+<li><code>layout</code>阶段（执行<code>DOM</code>操作之后）</li>
+</ol>
+<blockquote>
+<p><code>commitRootImpl</code>--&gt;<a href="https://github.com/facebook/react/blob/master/packages/react-reconciler/src/ReactFiberWorkLoop.new.js#L1784">commitRootImpl</a><br>
+在<code>before mutation阶段</code>组件之前以及<code>layout阶段之后</code>还涉及到<code>useEffect</code>的触发，<code>优先级</code>重置，<code>ref</code>的绑定/解绑等</p>
+</blockquote>
+<h2 id="commit流程">commit流程</h2>
+<h3 id="before-mutation-之前">before mutation 之前</h3>
+<p><code>commitRootImpl</code>方法中一直到<code>if (subtreeHasEffects || rootHasEffect)</code>之前，属于<code>before mutation之前</code></p>
+<pre><code class="language-javascript">do {
+    // `flushPassiveEffects` will call `flushSyncUpdateQueue` at the end, which
+    // means `flushPassiveEffects` will sometimes result in additional
+    // passive effects. So we need to keep flushing in a loop until there are
+    // no more pending effects.
+    // TODO: Might be better if `flushPassiveEffects` did not automatically
+    // flush synchronous work at the end, to avoid factoring hazards like this.
+    // 触发useEffect回调与其他的同步任务，由于可能会引发新的渲染。所以这里需要遍历到最终没有任务为止
+    flushPassiveEffects();
+  } while (rootWithPendingPassiveEffects !== null);
+    // root : fiberRootNode
+    // root.finishedLanes 指当前应用的rootFiber
+  const finishedWork = root.finishedWork;
+    // lanes 与优先级相关的变量
+  const lanes = root.finishedLanes;
+
+  if (enableSchedulingProfiler) {
+    markCommitStarted(lanes);
+  }
+
+  if (finishedWork === null) {
+
+    if (enableSchedulingProfiler) {
+      markCommitStopped();
+    }
+
+    return null;
+  }
+
+  // 重置Scheduler绑定的回调
+  root.finishedWork = null;
+  root.finishedLanes = NoLanes;
+
+  // commitRoot never returns a continuation; it always finishes synchronously.
+  // So we can clear these now to allow a new callback to be scheduled.
+  root.callbackNode = null;
+
+  // Update the first and last pending times on this root. The new first
+  // pending time is whatever is left on the root fiber.
+  let remainingLanes = mergeLanes(finishedWork.lanes, finishedWork.childLanes);
+  // 重置优先级变量
+  markRootFinished(root, remainingLanes);
+
+  // Clear already finished discrete updates in case that a later call of
+  // `flushDiscreteUpdates` starts a useless render pass which may cancels
+  // a scheduled timeout.
+  // 清理已经完成的discrete updates，eg: 鼠标点击触发的更新
+  if (rootsWithPendingDiscreteUpdates !== null) {
+    if (
+      !hasDiscreteLanes(remainingLanes) &amp;&amp;
+      rootsWithPendingDiscreteUpdates.has(root)
+    ) {
+      rootsWithPendingDiscreteUpdates.delete(root);
+    }
+  }
+    // 重置全局变量
+  if (root === workInProgressRoot) {
+    // We can reset these now that they are finished.
+    workInProgressRoot = null;
+    workInProgress = null;
+    workInProgressRootRenderLanes = NoLanes;
+  } else {
+    // This indicates that the last root we worked on is not the same one that
+    // we're committing now. This most commonly happens when a suspended root
+    // times out.
+  }
+  // Check if there are any effects in the whole tree.
+  // TODO: This is left over from the effect list implementation, where we had
+  // to check for the existence of `firstEffect` to satsify Flow. I think the
+  // only other reason this optimization exists is because it affects profiling.
+  // Reconsider whether this is necessary.
+  // 判断当前的树上面是否还有副作用的节点
+  const subtreeHasEffects =
+    (finishedWork.subtreeFlags &amp;
+      (BeforeMutationMask | MutationMask | LayoutMask | PassiveMask)) !==
+    NoFlags;
+  const rootHasEffect =
+    (finishedWork.flags &amp;
+      (BeforeMutationMask | MutationMask | LayoutMask | PassiveMask)) !==
+    NoFlags;
+    if (subtreeHasEffects || rootHasEffect) {
+
+    } else {
+        // No effects.
+        root.current = finishedWork;
+        // Measure these anyway so the flamegraph explicitly shows that there were
+        // no effects.
+        // TODO: Maybe there's a better way to report this.
+        if (enableProfilerTimer) {
+            recordCommitTime();
+        }
+    }
+</code></pre>
+<blockquote>
+<p><code>before mutation之前</code>的阶段都是在处理变量的赋值，以及状态的重置等操作</p>
+</blockquote>
+<h3 id="layout-之后">layout 之后</h3>
+<pre><code class="language-javascript">const rootDidHavePassiveEffects = rootDoesHavePassiveEffects;
+
+// useEffect相关
+if (rootDoesHavePassiveEffects) {
+  rootDoesHavePassiveEffects = false;
+  rootWithPendingPassiveEffects = root;
+  pendingPassiveEffectsLanes = lanes;
+  pendingPassiveEffectsRenderPriority = renderPriorityLevel;
+} else {}
+
+// 性能优化相关
+if (remainingLanes !== NoLanes) {
+  if (enableSchedulerTracing) {
+    // ...
+  }
+} else {
+  // ...
+}
+
+// 性能优化相关
+if (enableSchedulerTracing) {
+  if (!rootDidHavePassiveEffects) {
+    // ...
+  }
+}
+
+// ...检测无限循环的同步任务
+if (remainingLanes === SyncLane) {
+  // ...
+} 
+
+// 在离开commitRoot函数前调用，触发一次新的调度，确保任何附加的任务被调度
+ensureRootIsScheduled(root, now());
+
+// ...处理未捕获错误及老版本遗留的边界问题
+// 执行同步任务，这样同步任务不需要等到下次事件循环再执行
+// 比如在 componentDidMount 中执行 setState 创建的更新会在这里被同步执行
+// 或useLayoutEffect
+flushSyncCallbackQueue();
+return null;
+</code></pre>
+<p>主要包含三个方面：</p>
+<ol>
+<li><code>useEffect</code>的相关处理</li>
+<li>性能追踪</li>
+<li>在<code>commit</code>阶段会触发一些生命周期钩子(<code>componentDid***</code>)和<code>hook</code>（<code>useLayoutEffect</code>, <code>useEffect</code>）</li>
+</ol>
+<blockquote>
+<p>在这些回调方法中可能会触发新的更新，新的更新会开启新的<code>render-commit</code>过程，例如：</p>
+<ol>
+<li>触发点击事件，页面中令一个状态变为<code>0</code></li>
+<li>在<code>useLayoutEffect</code>中设置为随机数</li>
+<li>页面上渲染的数字不是<code>0</code>，而是变成随机数</li>
+</ol>
+</blockquote>
+<p>因为<code>useEffectLayout</code>在<code>layout阶段</code>同步执行回调，回调中触发状态更新，这个操作会重新调度一个新的任务:---&gt;<a href="https://github.com/facebook/react/blob/master/packages/react-reconciler/src/ReactFiberWorkLoop.new.js#L2114">flushSyncCallbackQueue</a></p>
+<pre><code class="language-javascript">// If layout work was scheduled, flush it now.
+  flushSyncCallbackQueue();
+</code></pre>
+<p>所以看不到页面中的数字先变成<code>0</code></p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#commit">commit</a>
+<ul>
+<li><a href="#commit%E6%B5%81%E7%A8%8B">commit流程</a>
+<ul>
+<li><a href="#before-mutation-%E4%B9%8B%E5%89%8D">before mutation 之前</a></li>
+<li><a href="#layout-%E4%B9%8B%E5%90%8E">layout 之后</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://qingwu-aby.github.io/post/85DIMWyxi/">
+              <h3 class="post-title">
+                React源码系列3---Render阶段
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+   | 
+  <a class="rss" href="https://qingwu-aby.github.io//atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+
+  let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+  // This should probably be throttled.
+  // Especially because it triggers during smooth scrolling.
+  // https://lodash.com/docs/4.17.10#throttle
+  // You could do like...
+  // window.addEventListener("scroll", () => {
+  //    _.throttle(doThatStuff, 100);
+  // });
+  // Only not doing it here to keep this Pen dependency-free.
+
+  window.addEventListener("scroll", event => {
+    let fromTop = window.scrollY;
+
+    mainNavLinks.forEach((link, index) => {
+      let section = document.getElementById(decodeURI(link.hash).substring(1));
+      let nextSection = null
+      if (mainNavLinks[index + 1]) {
+        nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+      }
+      if (section.offsetTop <= fromTop) {
+        if (nextSection) {
+          if (nextSection.offsetTop > fromTop) {
+            link.classList.add("current");
+          } else {
+            link.classList.remove("current");    
+          }
+        } else {
+          link.classList.add("current");
+        }
+      } else {
+        link.classList.remove("current");
+      }
+    });
+  });
+
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>
