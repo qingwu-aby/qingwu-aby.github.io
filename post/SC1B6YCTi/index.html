@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>React源码系列4---commit阶段 | Abyss</title>
 <meta name="description" content="温故而知新" />
-<link rel="shortcut icon" href="https://qingwu-aby.github.io//favicon.ico?v=1602495206513">
+<link rel="shortcut icon" href="https://qingwu-aby.github.io//favicon.ico?v=1603095044369">
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://qingwu-aby.github.io//styles/main.css">
@@ -20,7 +20,7 @@
       <div class="main-content">
         <div class="site-header">
   <a href="https://qingwu-aby.github.io/">
-  <img class="avatar" src="https://qingwu-aby.github.io//images/avatar.png?v=1602495206513" alt="">
+  <img class="avatar" src="https://qingwu-aby.github.io//images/avatar.png?v=1603095044369" alt="">
   </a>
   <h1 class="site-title">
     Abyss
@@ -80,7 +80,7 @@
                 2020-10-06
               </span>
               <span>
-                5 min read
+                7 min read
               </span>
               
             </div>
@@ -93,7 +93,7 @@
 <!-- more -->
 <h1 id="commit">commit</h1>
 <ul>
-<li><s>在<code>rootFiber.firstEffct</code>上保存了一条需要执行<code>副作用</code>的<code>Fiber节点</code>的单向链表<code>effectList</code></s>,最近的一次更新使用了<code>subtreeHasEffects</code>和<code>rootHasEffect</code>获取<code>副作用</code>的<code>Fiber节点</code><br>
+<li><s>在<code>rootFiber.firstEffct</code>上保存了一条需要执行<code>副作用</code>的<code>Fiber节点</code>的单向链表<code>effectList</code></s>,最近的一次更新中<strong>react官方</strong>使用了<code>subtreeHasEffects</code>和<code>rootHasEffect</code>获取<code>副作用</code>的<code>Fiber节点</code><br>
 ，这些<code>Fiber节点</code>的<code>updateQueue</code>中保存了变化的<code>props</code></li>
 <li>这些<code>副作用</code>对应的<code>DOM操作</code>会在<code>commit阶段</code>执行</li>
 <li>部分生命周期钩子函数<code>componentDid***</code>，<code>hook</code>（<code>useEffect</code>）需要在<code>commit阶段</code>执行</li>
@@ -268,6 +268,121 @@ return null;
   flushSyncCallbackQueue();
 </code></pre>
 <p>所以看不到页面中的数字先变成<code>0</code></p>
+<h2 id="before-mutation">before mutation</h2>
+<p><code>Renderer</code>工作的阶段被称为<code>commit阶段</code>，<code>commit阶段</code>分为三个部分</p>
+<ul>
+<li>
+<p>before mutation（执行<code>DOM操作前</code>）</p>
+</li>
+<li>
+<p>mutation阶段（执行<code>DOM</code>操作）</p>
+</li>
+<li>
+<p>layout阶段（执行<code>DOM</code>操作之后）</p>
+<blockquote>
+<p><a href="https://github.com/facebook/react/blob/master/packages/react-reconciler/src/ReactFiberWorkLoop.new.js#L1882-L1909">before mutation阶段</a></p>
+</blockquote>
+<pre><code class="language-javascript">// 保存之前的优先级，以同步优先级执行，执行完毕后恢复之前优先级
+</code></pre>
+</li>
+</ul>
+<p>const previousLanePriority = getCurrentUpdateLanePriority();<br>
+setCurrentUpdateLanePriority(SyncLanePriority);</p>
+<p>// 将当前上下文标记为CommitContext，作为commit阶段的标志<br>
+const prevExecutionContext = executionContext;<br>
+executionContext |= CommitContext;</p>
+<p>// 处理focus状态<br>
+focusedInstanceHandle = prepareForCommit(root.containerInfo);<br>
+shouldFireAfterActiveInstanceBlur = false;</p>
+<p>// beforeMutation阶段的主函数<br>
+commitBeforeMutationEffects(finishedWork);</p>
+<p>focusedInstanceHandle = null;</p>
+<pre><code>这里需要关注主函数`commitBeforeMutationEffects`的作用
+
+### commitBeforeMutationEffects
+
+`commitBeforeMutationEffects` 直接去调度`commitBeforeMutationEffectsImpl`
+代码逻辑：
+``` javascript
+function commitBeforeMutationEffects(firstChild: Fiber) {
+let fiber = firstChild;
+while (fiber !== null) {
+  if (fiber.deletions !== null) {
+    commitBeforeMutationEffectsDeletions(fiber.deletions);
+  }
+  if (fiber.child !== null) {
+    const primarySubtreeFlags = fiber.subtreeFlags &amp; BeforeMutationMask;
+    if (primarySubtreeFlags !== NoFlags) {
+      commitBeforeMutationEffects(fiber.child);
+    }
+  }
+
+ try {
+      commitBeforeMutationEffectsImpl(fiber);
+    } catch (error) {
+      captureCommitPhaseError(fiber, fiber.return, error);
+    }
+  fiber = fiber.sibling;
+}
+}
+</code></pre>
+<p>commitBeforeMutationEffectsImpl:</p>
+<pre><code class="language-javascript">function commitBeforeMutationEffectsImpl(fiber: Fiber) {
+  const current = fiber.alternate;
+  const flags = fiber.flags;
+// focus相关
+  if (!shouldFireAfterActiveInstanceBlur &amp;&amp; focusedInstanceHandle !== null) {
+    // Check to see if the focused element was inside of a hidden (Suspense) subtree.
+    // TODO: Move this out of the hot path using a dedicated effect tag.
+    if (
+      fiber.tag === SuspenseComponent &amp;&amp;
+      isSuspenseBoundaryBeingHidden(current, fiber) &amp;&amp;
+      doesFiberContain(fiber, focusedInstanceHandle)
+    ) {
+      shouldFireAfterActiveInstanceBlur = true;
+      beforeActiveInstanceBlur();
+    }
+  }
+  // 调用getSnapshotBeforeUpdate
+
+  if ((flags &amp; Snapshot) !== NoFlags) {
+    setCurrentDebugFiberInDEV(fiber);
+    commitBeforeMutationEffectOnFiber(current, fiber);
+    resetCurrentDebugFiberInDEV();
+  }
+ // 调度useEffect
+  if ((flags &amp; Passive) !== NoFlags) {
+    // If there are passive effects, schedule a callback to flush at
+    // the earliest opportunity.
+    if (!rootDoesHavePassiveEffects) {
+      rootDoesHavePassiveEffects = true;
+      scheduleCallback(NormalSchedulerPriority, () =&gt; {
+        flushPassiveEffects();
+        return null;
+      });
+    }
+  }
+}
+</code></pre>
+<p>整体分为三个部分：</p>
+<ol>
+<li>处理<code>DOM节点</code>渲染/删除后的<code>autoFocus</code>，<code>blur</code>逻辑</li>
+<li>调用<code>getSnapshotBeforeUpdate</code>生命周期钩子</li>
+<li>调度<code>useEffect</code></li>
+</ol>
+<h3 id="调用getsnapshotbeforeupdate">调用getSnapshotBeforeUpdate</h3>
+<blockquote>
+<p><code>commitBeforeMutationEffectOnFiber</code>是<code>commitBeforeMutationLifeCycles</code>的别名,<br>
+这个方法内部会调用<code>getSnapshotBeforeUpdate</code>:<br>
+<a href="https://github.com/facebook/react/blob/master/packages/react-reconciler/src/ReactFiberCommitWork.new.js#L237">commitBeforeMutationLifeCycles方法</a></p>
+</blockquote>
+<pre><code class="language-javascript">const snapshot = instance.getSnapshotBeforeUpdate(
+    finishedWork.elementType === finishedWork.type
+        ? prevProps
+        : resolveDefaultProps(finishedWork.type, prevProps),
+    prevState,
+);
+</code></pre>
 
               </div>
               <div class="toc-container">
@@ -278,6 +393,11 @@ return null;
 <ul>
 <li><a href="#before-mutation-%E4%B9%8B%E5%89%8D">before mutation 之前</a></li>
 <li><a href="#layout-%E4%B9%8B%E5%90%8E">layout 之后</a></li>
+</ul>
+</li>
+<li><a href="#before-mutation">before mutation</a>
+<ul>
+<li><a href="#%E8%B0%83%E7%94%A8getsnapshotbeforeupdate">调用getSnapshotBeforeUpdate</a></li>
 </ul>
 </li>
 </ul>
